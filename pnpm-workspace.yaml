@@ -1,0 +1,6 @@
+ignoredBuiltDependencies:
+  - cpu-features
+  - sharp
+
+onlyBuiltDependencies:
+  - esbuild
