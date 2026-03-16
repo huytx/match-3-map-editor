@@ -1,9 +1,9 @@
-import { playSound } from "@/utils/sound-controller";
-import { cn } from "@/utils/twMerge";
-import { motion } from "framer-motion";
+import { playSound } from '@/utils/sound-controller';
+import { cn } from '@/utils/twMerge';
+import { motion } from 'framer-motion';
 
 export const Button = ({
-  className = "",
+  className = '',
   children = null,
   onClick = null,
   style = {},
@@ -13,14 +13,14 @@ export const Button = ({
 }) => {
   const handleClick = () => {
     if (disabled) return;
-    playSound("button");
+    playSound('button');
     if (onClick) onClick();
   };
   return (
     <motion.button
       whileTap={!disabledAnimationPress && !disabled && { scale: 0.9 }}
       onClick={handleClick}
-      className={cn("", className)}
+      className={cn('', className)}
       style={style}
       {...props}
     >

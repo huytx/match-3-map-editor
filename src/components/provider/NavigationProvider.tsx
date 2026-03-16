@@ -1,7 +1,7 @@
 import { createContext, useState, ReactNode, useContext, useEffect, useCallback } from 'react';
 import eventEmitter from '@/utils/event-emitter';
 
-export type ScreenName = 'home' | 'game' | 'result' | null;
+export type ScreenName = 'home' | 'game' | 'result' | 'level-editor' | null;
 
 interface NavigationContextProps {
     currentScreen: ScreenName;

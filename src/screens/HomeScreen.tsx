@@ -23,8 +23,12 @@ export const HomeScreenView = () => {
         </div>
         <button className="btn-play" onClick={() => navigate('game')}>
           ? Play
-        </button>
-      </div>
+        </button>        <button
+          className="text-sm text-white/50 hover:text-white/80 underline underline-offset-4 transition-colors cursor-pointer"
+          onClick={() => navigate('level-editor')}
+        >
+          Level Editor
+        </button>      </div>
     </div>
   );
 };

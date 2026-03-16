@@ -17,6 +17,7 @@ import { waitFor } from '../utils/asyncUtils';
 import { match3GetConfig, Match3Mode } from '../match3/Match3Config';
 import { userStats } from '../utils/userStats';
 import eventEmitter from '../utils/event-emitter';
+import { consumePendingLevel } from '../utils/levelBridge';
 
 /** The screen tha holds the Match3 game */
 export class GameScreen extends Container {
@@ -99,14 +100,17 @@ export class GameScreen extends Container {
 
     /** Prepare the screen just before showing */
     public prepare() {
-        const match3Config = match3GetConfig({
-            rows: getUrlParamNumber('rows') ?? 9,
-            columns: getUrlParamNumber('columns') ?? 7,
-            tileSize: getUrlParamNumber('tileSize') ?? 50,
-            freeMoves: getUrlParam('freeMoves') !== null,
-            duration: getUrlParamNumber('duration') ?? 60,
-            mode: (getUrlParam('mode') as Match3Mode) ?? userSettings.getGameMode(),
-        });
+        const pendingLevel = consumePendingLevel();
+        const match3Config = pendingLevel
+            ? match3GetConfig(pendingLevel)
+            : match3GetConfig({
+                  rows: getUrlParamNumber('rows') ?? 9,
+                  columns: getUrlParamNumber('columns') ?? 7,
+                  tileSize: getUrlParamNumber('tileSize') ?? 50,
+                  freeMoves: getUrlParam('freeMoves') !== null,
+                  duration: getUrlParamNumber('duration') ?? 60,
+                  mode: (getUrlParam('mode') as Match3Mode) ?? userSettings.getGameMode(),
+              });
 
         this.finished = false;
         this.shelf?.setup(match3Config);
