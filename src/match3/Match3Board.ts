@@ -88,9 +88,9 @@ export class Match3Board {
       ? config.grid.map((row) => [...row])
       : match3CreateGrid(this.rows, this.columns, this.commonTypes);
 
-    // Fill up the visual board with piece sprites
+    // Fill up the visual board with piece sprites (skip empty cells, type=0)
     match3ForEach(this.grid, (gridPosition: Match3Position, type: Match3Type) => {
-      this.createPiece(gridPosition, type);
+      if (type !== 0) this.createPiece(gridPosition, type);
     });
   }
 

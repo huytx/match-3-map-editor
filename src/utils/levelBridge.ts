@@ -8,11 +8,18 @@ import { Match3Config } from '../match3/Match3Config';
 
 let pendingLevel: Match3Config | null = null;
 let fromEditor = false;
+let editorMode: Match3Config['mode'] = 'normal';
 
 /** Store a level config to be consumed on the next game start. */
 export function setPendingLevel(data: Match3Config | null) {
   pendingLevel = data;
   fromEditor = data !== null;
+  if (data) editorMode = data.mode;
+}
+
+/** Returns the mode of the level launched from the editor. */
+export function getEditorMode(): Match3Config['mode'] {
+  return editorMode;
 }
 
 /** Read and clear the pending level config (returns null if none was set). */
