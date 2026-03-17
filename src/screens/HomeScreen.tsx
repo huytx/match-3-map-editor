@@ -19,16 +19,18 @@ export const HomeScreenView = () => {
           Puzzling Potions
         </div>
         <div className="text-[clamp(60px,14vw,90px)] filter-[drop-shadow(0_4px_14px_rgba(255,130,33,0.6))] leading-none">
-          ???
+          🧪🔮⚗️
         </div>
         <button className="btn-play" onClick={() => navigate('game')}>
-          ? Play
-        </button>        <button
+          ▶ Play
+        </button>{' '}
+        <button
           className="text-sm text-white/50 hover:text-white/80 underline underline-offset-4 transition-colors cursor-pointer"
           onClick={() => navigate('level-editor')}
         >
           Level Editor
-        </button>      </div>
+        </button>{' '}
+      </div>
     </div>
   );
 };

@@ -360,7 +360,7 @@ export const LevelEditorScreenView = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${levelName || 'level'}.json`;
+    a.download = `${levelName || 'level'}_${PIECE_COUNT[mode]}t.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -437,36 +437,45 @@ export const LevelEditorScreenView = () => {
           {/* Config */}
           <section className="flex flex-col gap-2">
             <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Config</h2>
-            <input
-              type="text"
-              placeholder="Level name…"
-              value={levelName}
-              onChange={(e) => setLevelName(e.target.value)}
-              className="bg-white/5 border border-white/15 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-orange w-full"
-            />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-white/30 text-[9px] uppercase tracking-wide">Label / File name</span>
+              <input
+                type="text"
+                placeholder="my-level…"
+                value={levelName}
+                onChange={(e) => setLevelName(e.target.value)}
+                className="bg-white/5 border border-white/15 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-orange w-full"
+              />
+            </div>
             <div className="flex gap-2">
-              <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as Match3Mode)}
-                className="flex-1 bg-white/5 border border-white/15 text-white rounded-lg px-2 py-1.5 text-xs cursor-pointer min-w-0"
-              >
-                {match3ValidModes.map((m) => (
-                  <option key={m} value={m} className="bg-[#1a0040]">
-                    {m.charAt(0).toUpperCase() + m.slice(1)} ({PIECE_COUNT[m]})
-                  </option>
-                ))}
-              </select>
-              <div className="flex items-center gap-1 bg-white/5 border border-white/15 rounded-lg px-2">
-                <input
-                  type="number"
-                  min={30}
-                  max={300}
-                  step={10}
-                  value={duration}
-                  onChange={(e) => setDuration(Math.max(30, Math.min(300, Number(e.target.value))))}
-                  className="w-10 bg-transparent text-white text-xs text-center outline-none tabular-nums"
-                />
-                <span className="text-white/30 text-xs">s</span>
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                <span className="text-white/30 text-[9px] uppercase tracking-wide">Pieces</span>
+                <select
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as Match3Mode)}
+                  className="bg-white/5 border border-white/15 text-white rounded-lg px-2 py-1.5 text-xs cursor-pointer w-full"
+                >
+                  {match3ValidModes.map((m) => (
+                    <option key={m} value={m} className="bg-[#1a0040]">
+                      {PIECE_COUNT[m]} types
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-white/30 text-[9px] uppercase tracking-wide">Time</span>
+                <div className="flex items-center gap-1 bg-white/5 border border-white/15 rounded-lg px-2 py-1.5">
+                  <input
+                    type="number"
+                    min={30}
+                    max={300}
+                    step={10}
+                    value={duration}
+                    onChange={(e) => setDuration(Math.max(30, Math.min(300, Number(e.target.value))))}
+                    className="w-10 bg-transparent text-white text-xs text-center outline-none tabular-nums"
+                  />
+                  <span className="text-white/30 text-xs">s</span>
+                </div>
               </div>
             </div>
           </section>

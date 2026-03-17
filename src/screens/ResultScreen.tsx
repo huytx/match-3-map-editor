@@ -6,7 +6,7 @@ import { isEditorPreview, clearEditorPreview, getEditorMode } from '@/utils/leve
 
 function buildStars(grade: number): string {
   const n = Math.max(0, Math.min(3, grade));
-  return '?'.repeat(n) + '?'.repeat(3 - n);
+  return '⭐'.repeat(n) + '☆'.repeat(3 - n);
 }
 
 function gradeLabel(grade: number): string {
@@ -41,7 +41,7 @@ export const ResultScreenView = () => {
         <div className="text-[clamp(48px,12vw,72px)] font-bold text-white leading-none mt-1.5">
           {score.toLocaleString()}
         </div>
-        <div className="text-sm text-gold">{isBest ? '?? New best score!' : `Best: ${bestScore.toLocaleString()}`}</div>
+        <div className="text-sm text-gold">{isBest ? '🏆 New best score!' : `Best: ${bestScore.toLocaleString()}`}</div>
       </div>
       <div className="py-6 pb-9 flex flex-col items-center gap-3">
         <button className="btn-play" onClick={() => navigate('game')}>
