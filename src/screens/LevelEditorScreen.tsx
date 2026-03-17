@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useStoreActions, useStoreState } from 'easy-peasy';
 import { useNavigation } from '@/components/provider/NavigationProvider';
 import { Match3Mode, match3ValidModes } from '@/match3/Match3Config';
 import { setPendingLevel } from '@/utils/levelBridge';
+import type { GameModel, EditorSnapshot } from '@/store/game-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -18,24 +20,24 @@ const PIECE_COUNT: Record<Match3Mode, number> = {
 };
 
 const PIECE_INFO = [
-  { name: 'Dragon', bg: '#e8412b', emoji: '🐉' },
-  { name: 'Frog', bg: '#4abe50', emoji: '🐸' },
-  { name: 'Newt', bg: '#4287f5', emoji: '🦎' },
-  { name: 'Snake', bg: '#d4e84b', emoji: '🐍' },
-  { name: 'Spider', bg: '#9b4be8', emoji: '🕷️' },
-  { name: 'Yeti', bg: '#a8e4f0', emoji: '❄️' },
+  { name: 'Dragon', bg: '#e8412b', img: '/assets/editor/piece-dragon.png' },
+  { name: 'Frog', bg: '#4abe50', img: '/assets/editor/piece-frog.png' },
+  { name: 'Newt', bg: '#4287f5', img: '/assets/editor/piece-newt.png' },
+  { name: 'Snake', bg: '#d4e84b', img: '/assets/editor/piece-snake.png' },
+  { name: 'Spider', bg: '#9b4be8', img: '/assets/editor/piece-spider.png' },
+  { name: 'Yeti', bg: '#a8e4f0', img: '/assets/editor/piece-yeti.png' },
 ] as const;
 
 const SPECIAL_INFO = [
-  { name: 'Blast', key: 'special-blast', bg: '#ff9235', emoji: '💥' },
-  { name: 'Row', key: 'special-row', bg: '#e84b9b', emoji: '↔️' },
-  { name: 'Column', key: 'special-column', bg: '#4be8c8', emoji: '↕️' },
-  { name: 'Colour', key: 'special-colour', bg: '#ffd579', emoji: '🌈' },
+  { name: 'Blast', key: 'special-blast', bg: '#ff9235', img: '/assets/editor/special-blast.png' },
+  { name: 'Row', key: 'special-row', bg: '#e84b9b', img: '/assets/editor/special-row.png' },
+  { name: 'Column', key: 'special-column', bg: '#4be8c8', img: '/assets/editor/special-column.png' },
+  { name: 'Colour', key: 'special-colour', bg: '#ffd579', img: '/assets/editor/special-colour.png' },
 ] as const;
 
 type PaletteEntry = { kind: 'piece'; type: number } | { kind: 'special'; index: number };
 
-type ToolMode = 'paint' | 'fill' | 'erase';
+type ToolMode = 'paint' | 'fill' | 'remove';
 
 // Special sentinels stored as negative numbers: -(specialIndex+1)
 const specialSentinel = (i: number) => -(i + 1);
@@ -44,22 +46,32 @@ const specialSentinel = (i: number) => -(i + 1);
 // Grid helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function randomType(max: number) {
-  return Math.floor(Math.random() * max) + 1;
+function makeEmptyGrid(): number[][] {
+  return Array.from({ length: ROWS }, () => Array.from({ length: COLUMNS }, () => 0));
 }
 
 function makeRandomGrid(maxType: number): number[][] {
-  return Array.from({ length: ROWS }, () => Array.from({ length: COLUMNS }, () => randomType(maxType)));
+  return Array.from({ length: ROWS }, () =>
+    Array.from({ length: COLUMNS }, () => Math.floor(Math.random() * maxType) + 1),
+  );
+}
+
+/**
+ * Cyclic diagonal pattern: grid[r][c] = (r+c) % maxType + 1
+ * Provably deadlocked for any maxType > 2: no adjacent swap can produce 3-in-a-row.
+ */
+function makeDeadlockGrid(maxType: number): number[][] {
+  return Array.from({ length: ROWS }, (_, r) => Array.from({ length: COLUMNS }, (_, c) => ((r + c) % maxType) + 1));
 }
 
 function adaptGrid(prev: number[][], maxType: number): number[][] {
   return Array.from({ length: ROWS }, (_, r) =>
     Array.from({ length: COLUMNS }, (_, c) => {
       const v = prev[r]?.[c];
-      if (v === undefined) return randomType(maxType);
+      if (v === undefined || v === 0) return 0;
       if (v < 0) return v; // keep special sentinel
       if (v >= 1 && v <= maxType) return v;
-      return randomType(maxType);
+      return 0; // out-of-range piece → clear
     }),
   );
 }
@@ -70,14 +82,77 @@ function floodFill(grid: number[][], r: number, c: number, newVal: number): numb
   const next = grid.map((row) => [...row]);
   const queue: [number, number][] = [[r, c]];
   while (queue.length) {
-    const entry = queue.pop()!;
-    const [cr, cc] = entry;
+    const [cr, cc] = queue.pop()!;
     if (cr < 0 || cr >= ROWS || cc < 0 || cc >= COLUMNS) continue;
     if (next[cr][cc] !== oldVal) continue;
     next[cr][cc] = newVal;
     queue.push([cr - 1, cc], [cr + 1, cc], [cr, cc - 1], [cr, cc + 1]);
   }
   return next;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IconSelect — custom dropdown with image + text rows
+// ─────────────────────────────────────────────────────────────────────────────
+
+function IconSelect({
+  options,
+  value,
+  isActive,
+  onSelect,
+}: {
+  options: readonly { name: string; bg: string; img: string }[];
+  value: number;
+  isActive: boolean;
+  onSelect: (i: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const safeValue = Math.min(value, options.length - 1);
+  const selected = options[safeValue];
+  return (
+    <div className="flex flex-col">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all w-full"
+        style={{
+          borderColor: isActive ? selected.bg : 'rgba(255,255,255,0.15)',
+          backgroundColor: isActive ? selected.bg + '18' : 'rgba(255,255,255,0.05)',
+          boxShadow: isActive ? `0 0 8px ${selected.bg}44` : 'none',
+        }}
+      >
+        <img src={selected.img} alt={selected.name} className="w-5 h-5 object-contain shrink-0" />
+        <span className="flex-1 text-xs text-white/80 text-left truncate">{selected.name}</span>
+        <span
+          className="text-white/40 text-[10px] transition-transform duration-150"
+          style={{ display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none' }}
+        >
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div
+          className="mt-0.5 flex flex-col rounded-lg border border-white/12 overflow-hidden"
+          style={{ backgroundColor: '#170e2b' }}
+        >
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                onSelect(i);
+                setOpen(false);
+              }}
+              className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer transition-colors hover:bg-white/8"
+              style={{ backgroundColor: i === safeValue ? opt.bg + '22' : undefined }}
+            >
+              <img src={opt.img} alt={opt.name} className="w-5 h-5 object-contain shrink-0" />
+              <span className="text-xs text-white/75 truncate">{opt.name}</span>
+              {i === safeValue && <span className="ml-auto text-[10px] text-white/35">✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,46 +192,6 @@ function useHistory(init: number[][]) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Distribution chart
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface DistChartProps {
-  grid: number[][];
-  maxType: number;
-}
-const DistChart = ({ grid, maxType }: DistChartProps) => {
-  const flat = grid.flat();
-  const total = flat.filter((v) => v > 0).length;
-  const counts = Array.from({ length: maxType }, (_, i) => ({
-    type: i + 1,
-    count: flat.filter((v) => v === i + 1).length,
-  }));
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col gap-2">
-      <h2 className="text-gold font-bold text-xs uppercase tracking-widest">Distribution</h2>
-      <div className="flex flex-col gap-1.5">
-        {counts.map(({ type, count }) => {
-          const info = PIECE_INFO[type - 1];
-          const pct = total ? Math.round((count / total) * 100) : 0;
-          return (
-            <div key={type} className="flex items-center gap-1.5">
-              <span className="text-sm w-5 text-center leading-none">{info?.emoji}</span>
-              <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, backgroundColor: info?.bg }}
-                />
-              </div>
-              <span className="text-[10px] text-white/40 tabular-nums w-7 text-right">{pct}%</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -164,14 +199,22 @@ export const LevelEditorScreenView = () => {
   const { navigate } = useNavigation();
   const screenRef = useRef<HTMLDivElement>(null);
 
-  // Config
-  const [mode, setMode] = useState<Match3Mode>('normal');
-  const [duration, setDuration] = useState(60);
-  const [freeMoves, setFreeMoves] = useState(false);
-  const [levelName, setLevelName] = useState('');
+  // ── Restore snapshot from store on mount ────────────────────────────
+  const snapshot = useStoreState<GameModel, EditorSnapshot | null>((s) => s.editor.snapshot);
+  const saveSnapshot = useStoreActions<GameModel>((a) => a.editor.save);
 
-  // Grid history
-  const { grid, push, undo, redo, canUndo, canRedo } = useHistory(makeRandomGrid(PIECE_COUNT['normal']));
+  const initialGrid = snapshot?.grid ?? makeEmptyGrid();
+  const initialMode = snapshot?.mode ?? 'normal';
+  const initialDuration = snapshot?.duration ?? 60;
+  const initialLevelName = snapshot?.levelName ?? '';
+
+  // Config
+  const [mode, setMode] = useState<Match3Mode>(initialMode);
+  const [duration, setDuration] = useState(initialDuration);
+  const [levelName, setLevelName] = useState(initialLevelName);
+
+  // Grid history — start from snapshot or empty
+  const { grid, push, undo, redo, canUndo, canRedo } = useHistory(initialGrid);
 
   // Editor
   const [palette, setPalette] = useState<PaletteEntry>({ kind: 'piece', type: 1 });
@@ -208,13 +251,13 @@ export const LevelEditorScreenView = () => {
       }
       if (e.key === 'p' || e.key === 'P') setTool('paint');
       if (e.key === 'f' || e.key === 'F') setTool('fill');
-      if (e.key === 'e' || e.key === 'E') setTool('erase');
+      if (e.key === 'r' || e.key === 'R') setTool('remove');
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
 
-  // Mode change → re-clamp existing grid
+  // Mode change → clamp grid (out-of-range pieces become empty)
   useEffect(() => {
     push(adaptGrid(grid, PIECE_COUNT[mode]));
     if (palette.kind === 'piece' && palette.type > PIECE_COUNT[mode]) setPalette({ kind: 'piece', type: 1 });
@@ -223,11 +266,11 @@ export const LevelEditorScreenView = () => {
 
   // ── Paint logic ───────────────────────────────────────────────────────────
   const paintValue = useCallback((): number => {
-    if (tool === 'erase') return randomType(maxType);
+    if (tool === 'remove') return 0;
     if (palette.kind === 'piece') return palette.type;
     if (palette.kind === 'special') return specialSentinel(palette.index);
-    return randomType(maxType);
-  }, [palette, tool, maxType]);
+    return 0;
+  }, [palette, tool]);
 
   const applyPaint = useCallback(
     (r: number, c: number, g: number[][]): number[][] => {
@@ -260,29 +303,40 @@ export const LevelEditorScreenView = () => {
 
   // ── Cell visuals ──────────────────────────────────────────────────────────
   const getCellStyle = (type: number) => {
+    if (type === 0) return { bg: 'rgba(10,0,30,0.55)', border: 'rgba(255,255,255,0.06)', img: '' };
     if (type < 0) {
       const sp = SPECIAL_INFO[Math.abs(type) - 1];
-      return { bg: sp?.bg ?? '#888', border: '#ffd579aa', label: sp?.emoji ?? '★' };
+      return { bg: 'rgba(10,0,30,0.7)', border: '#ffd579aa', img: sp?.img ?? '' };
     }
     const info = PIECE_INFO[type - 1];
-    return { bg: info?.bg ?? '#555', border: 'rgba(255,255,255,0.08)', label: '' };
+    return { bg: 'rgba(10,0,30,0.7)', border: info ? info.bg + 'aa' : 'rgba(255,255,255,0.12)', img: info?.img ?? '' };
   };
-
-  // ── Special stats ─────────────────────────────────────────────────────────
-  const specialCount = useMemo(() => grid.flat().filter((v) => v < 0).length, [grid]);
 
   // ── Resolve grid (specials → actual type offsets) ─────────────────────────
   const resolveGrid = useCallback((): number[][] => {
     return grid.map((row) => row.map((v) => (v < 0 ? maxType + Math.abs(v) : v)));
   }, [grid, maxType]);
 
+  // ── Distribution items ────────────────────────────────────────────────────
+  const distItems = useMemo(() => {
+    const flat = grid.flat();
+    const total = flat.filter((v) => v > 0).length;
+    return Array.from({ length: maxType }, (_, i) => {
+      const type = i + 1;
+      const count = flat.filter((v) => v === type).length;
+      const pct = total ? Math.round((count / total) * 100) : 0;
+      return { type, count, pct, info: PIECE_INFO[i] };
+    });
+  }, [grid, maxType]);
+
   // ── Actions ───────────────────────────────────────────────────────────────
   const handlePlay = () => {
+    saveSnapshot({ grid, mode, duration, levelName });
     setPendingLevel({
       rows: ROWS,
       columns: COLUMNS,
       tileSize: 50,
-      freeMoves,
+      freeMoves: false,
       duration,
       mode,
       levelName: levelName || undefined,
@@ -297,7 +351,7 @@ export const LevelEditorScreenView = () => {
       rows: ROWS,
       columns: COLUMNS,
       tileSize: 50,
-      freeMoves,
+      freeMoves: false,
       duration,
       mode,
       grid: resolveGrid(),
@@ -321,9 +375,8 @@ export const LevelEditorScreenView = () => {
         const m: Match3Mode = match3ValidModes.includes(data.mode) ? data.mode : 'normal';
         setMode(m);
         setDuration(Math.max(30, Math.min(300, Number(data.duration) || 60)));
-        setFreeMoves(Boolean(data.freeMoves));
         setLevelName(data.levelName ?? '');
-        push(Array.isArray(data.grid) ? adaptGrid(data.grid, PIECE_COUNT[m]) : makeRandomGrid(PIECE_COUNT[m]));
+        push(Array.isArray(data.grid) ? adaptGrid(data.grid, PIECE_COUNT[m]) : makeEmptyGrid());
       } catch {
         /* ignore bad JSON */
       }
@@ -332,273 +385,272 @@ export const LevelEditorScreenView = () => {
     e.target.value = '';
   };
 
+  // ── Tool definitions ──────────────────────────────────────────────────────
+  const TOOLS: [ToolMode, string, string][] = [
+    ['paint', '✏️', 'Paint (P)'],
+    ['fill', '🪣', 'Fill (F)'],
+    ['remove', '🗑️', 'Remove (R)'],
+  ];
+
   // ─────────────────────────────────────────────────────────────────────────
-  // Render
+  // Render — landscape two-panel layout, no outer scroll
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div
       ref={screenRef}
-      className="html-screen overflow-y-auto overflow-x-hidden items-stretch justify-start
-                       [background:linear-gradient(160deg,#0a0025_0%,#2c136c_55%,#0a0025_100%)]"
+      className="html-screen flex flex-row overflow-hidden
+                 [background:linear-gradient(160deg,#0a0025_0%,#2c136c_55%,#0a0025_100%)]"
     >
-      {/* Header */}
-      <div className="w-full flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
-        <button className="btn-icon text-base" onClick={() => navigate('home')} aria-label="Back">
-          ←
-        </button>
-        <div className="flex flex-col items-center">
-          <h1 className="text-gold font-bold text-sm tracking-wide leading-tight">Level Editor</h1>
-          {levelName && <span className="text-white/40 text-[10px]">{levelName}</span>}
-        </div>
-        <div className="flex gap-1">
+      {/* ── LEFT PANEL: Editor controls ──────────────────────────────────── */}
+      <div className="w-60 shrink-0 flex flex-col h-full border-r border-white/10 bg-black/25 overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-2 py-2.5 border-b border-white/10 shrink-0 gap-1">
           <button
-            title="Undo (Ctrl+Z)"
-            disabled={!canUndo}
-            onClick={undo}
-            className="btn-icon text-sm disabled:opacity-25"
+            className="btn-icon text-base flex item-center justify-center"
+            onClick={() => navigate('home')}
+            aria-label="Back"
           >
-            ↩
+            <p className="-translate-y-0.5">←</p>
           </button>
-          <button
-            title="Redo (Ctrl+Y)"
-            disabled={!canRedo}
-            onClick={redo}
-            className="btn-icon text-sm disabled:opacity-25"
-          >
-            ↪
-          </button>
+          <span className="text-gold font-bold text-xs">Level Editor</span>
+          <div className="flex gap-0.5">
+            <button
+              title="Undo (Ctrl+Z)"
+              disabled={!canUndo}
+              onClick={undo}
+              className="btn-icon text-xs disabled:opacity-25"
+            >
+              ↩
+            </button>
+            <button
+              title="Redo (Ctrl+Y)"
+              disabled={!canRedo}
+              onClick={redo}
+              className="btn-icon text-xs disabled:opacity-25"
+            >
+              ↪
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Body */}
-      <div className="flex flex-col xl:flex-row gap-4 p-4 w-full max-w-6xl mx-auto">
-        {/* LEFT: Config + stats */}
-        <div className="flex flex-col gap-3 xl:w-48 shrink-0">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
-            <h2 className="text-gold font-bold text-xs uppercase tracking-widest">Config</h2>
-
-            <label className="flex flex-col gap-1 text-xs text-white/70">
-              Level Name
-              <input
-                type="text"
-                placeholder="My Level"
-                value={levelName}
-                onChange={(e) => setLevelName(e.target.value)}
-                className="bg-deep-purple border border-white/20 text-white rounded-lg px-2 py-1.5 text-sm outline-none focus:border-orange"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-xs text-white/70">
-              Mode
+        <div className="flex flex-col gap-3 p-3 flex-1 min-h-0">
+          {/* Config */}
+          <section className="flex flex-col gap-2">
+            <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Config</h2>
+            <input
+              type="text"
+              placeholder="Level name…"
+              value={levelName}
+              onChange={(e) => setLevelName(e.target.value)}
+              className="bg-white/5 border border-white/15 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-orange w-full"
+            />
+            <div className="flex gap-2">
               <select
-                className="bg-deep-purple border border-white/20 text-white rounded-lg px-2 py-1.5 text-sm cursor-pointer"
                 value={mode}
                 onChange={(e) => setMode(e.target.value as Match3Mode)}
+                className="flex-1 bg-white/5 border border-white/15 text-white rounded-lg px-2 py-1.5 text-xs cursor-pointer min-w-0"
               >
                 {match3ValidModes.map((m) => (
-                  <option key={m} value={m}>
-                    {m.charAt(0).toUpperCase() + m.slice(1)} ({PIECE_COUNT[m]} types)
+                  <option key={m} value={m} className="bg-[#1a0040]">
+                    {m.charAt(0).toUpperCase() + m.slice(1)} ({PIECE_COUNT[m]})
                   </option>
                 ))}
               </select>
-            </label>
-
-            <label className="flex flex-col gap-1 text-xs text-white/70">
-              Duration (s)
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-white/5 border border-white/15 rounded-lg px-2">
                 <input
-                  type="range"
+                  type="number"
                   min={30}
                   max={300}
+                  step={10}
                   value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                  className="flex-1 accent-orange h-1 cursor-pointer"
+                  onChange={(e) => setDuration(Math.max(30, Math.min(300, Number(e.target.value))))}
+                  className="w-10 bg-transparent text-white text-xs text-center outline-none tabular-nums"
                 />
-                <span className="w-8 text-right text-white text-xs tabular-nums">{duration}</span>
+                <span className="text-white/30 text-xs">s</span>
               </div>
-            </label>
+            </div>
+          </section>
 
-            <label className="flex items-center gap-2 text-xs text-white/70 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={freeMoves}
-                onChange={(e) => setFreeMoves(e.target.checked)}
-                className="w-4 h-4 accent-orange cursor-pointer"
-              />
-              Free Moves
-            </label>
-          </div>
+          <div className="h-px bg-white/8 shrink-0" />
 
-          <DistChart grid={grid} maxType={maxType} />
+          {/* Brush */}
+          <section className="flex flex-col gap-2">
+            <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Brush</h2>
 
-          {specialCount > 0 && (
-            <p className="text-white/30 text-[10px] px-1">
-              ★ {specialCount} pre-placed special{specialCount > 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-
-        {/* CENTRE: Grid */}
-        <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-          {/* Tool bar */}
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl p-1.5">
-            {(
-              [
-                ['paint', '✏️', 'Paint (P)'],
-                ['fill', '🪣', 'Fill (F)'],
-                ['erase', '🧹', 'Erase (E)'],
-              ] as [ToolMode, string, string][]
-            ).map(([t, icon, title]) => (
-              <button
-                key={t}
-                title={title}
-                onClick={() => setTool(t)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs cursor-pointer transition-all"
-                style={{
-                  backgroundColor: tool === t ? 'rgba(255,213,121,0.2)' : 'transparent',
-                  color: tool === t ? '#ffd579' : 'rgba(255,255,255,0.4)',
+            {/* Piece select */}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-white/30 text-[9px] uppercase tracking-wide">Piece</span>
+              <IconSelect
+                options={PIECE_INFO.slice(0, maxType)}
+                value={palette.kind === 'piece' ? palette.type - 1 : 0}
+                isActive={palette.kind === 'piece'}
+                onSelect={(i) => {
+                  setPalette({ kind: 'piece', type: i + 1 });
+                  setTool('paint');
                 }}
-              >
-                <span>{icon}</span>
-                <span className="hidden sm:inline">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
-              </button>
-            ))}
-          </div>
+              />
+            </div>
 
-          <p className="text-white/25 text-[10px] h-3.5 tabular-nums">
-            {hovered ? `row ${hovered[0]}, col ${hovered[1]}` : ''}
-          </p>
+            {/* Special select */}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-white/30 text-[9px] uppercase tracking-wide">Special</span>
+              <IconSelect
+                options={SPECIAL_INFO}
+                value={palette.kind === 'special' ? palette.index : 0}
+                isActive={palette.kind === 'special'}
+                onSelect={(i) => {
+                  setPalette({ kind: 'special', index: i });
+                  setTool('paint');
+                }}
+              />
+            </div>
 
-          {/* Grid */}
-          <div
-            className="touch-none select-none overflow-auto max-w-full"
-            onPointerDown={() => {
-              isPainting.current = true;
-            }}
-            onPointerLeave={() => {
-              setHovered(null);
-              isPainting.current = false;
-            }}
-          >
-            {grid.map((row, r) => (
-              <div key={r} className="flex">
-                {row.map((type, c) => {
-                  const { bg, border, label } = getCellStyle(type);
-                  const isHov = hovered?.[0] === r && hovered?.[1] === c;
-                  return (
-                    <div
-                      key={c}
-                      className="w-9 h-9 m-px rounded-md cursor-crosshair border-2 flex items-center justify-center text-[11px] leading-none transition-transform duration-75"
-                      style={{
-                        backgroundColor: bg,
-                        borderColor: border,
-                        transform: isHov ? 'scale(1.18)' : 'scale(1)',
-                        zIndex: isHov ? 10 : 0,
-                        boxShadow: isHov ? `0 0 10px ${bg}` : 'none',
-                      }}
-                      onPointerOver={(e) => {
-                        e.stopPropagation();
-                        setHovered([r, c]);
-                      }}
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        handleCellDown(r, c);
-                      }}
-                      onPointerEnter={() => handleCellEnter(r, c)}
-                    >
-                      {label}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-4 flex-wrap justify-center pt-1">
-            <button
-              className="text-xs text-white/35 hover:text-white/65 transition-colors cursor-pointer"
-              onClick={() => push(makeRandomGrid(maxType))}
-            >
-              ↺ Randomize
-            </button>
-          </div>
-
-          <p className="text-white/20 text-[10px] tabular-nums">
-            {ROWS} × {COLUMNS}
-          </p>
-        </div>
-
-        {/* RIGHT: Palette + Actions */}
-        <div className="flex flex-col gap-3 xl:w-44 shrink-0">
-          {/* Pieces */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col gap-1.5">
-            <h2 className="text-gold font-bold text-xs uppercase tracking-widest mb-0.5">Pieces</h2>
-            {PIECE_INFO.slice(0, maxType).map((info, i) => {
-              const t = i + 1;
-              const active = palette.kind === 'piece' && palette.type === t;
-              return (
+            {/* Tool toggle */}
+            <div className="flex rounded-lg overflow-hidden border border-white/15">
+              {TOOLS.map(([t, icon, title]) => (
                 <button
                   key={t}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all"
+                  title={title}
+                  onClick={() => setTool(t)}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] cursor-pointer transition-colors"
                   style={{
-                    backgroundColor: active ? info.bg + '28' : 'transparent',
-                    borderColor: active ? info.bg : 'rgba(255,255,255,0.08)',
-                    color: active ? '#fff' : 'rgba(255,255,255,0.45)',
-                  }}
-                  onClick={() => {
-                    setPalette({ kind: 'piece', type: t });
-                    setTool('paint');
+                    backgroundColor: tool === t ? 'rgba(255,213,121,0.18)' : 'transparent',
+                    color: tool === t ? '#ffd579' : 'rgba(255,255,255,0.35)',
                   }}
                 >
-                  <span className="text-sm leading-none">{info.emoji}</span>
-                  {info.name}
+                  <span>{icon}</span>
+                  <span className="capitalize">{t}</span>
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          </section>
 
-          {/* Specials */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col gap-1.5">
-            <h2 className="text-gold font-bold text-xs uppercase tracking-widest mb-0.5">Pre-placed Specials</h2>
-            {SPECIAL_INFO.map((sp, i) => {
-              const active = palette.kind === 'special' && palette.index === i;
-              return (
-                <button
-                  key={sp.key}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all"
-                  style={{
-                    backgroundColor: active ? sp.bg + '28' : 'transparent',
-                    borderColor: active ? sp.bg : 'rgba(255,255,255,0.08)',
-                    color: active ? '#fff' : 'rgba(255,255,255,0.45)',
-                  }}
-                  onClick={() => {
-                    setPalette({ kind: 'special', index: i });
-                    setTool('paint');
-                  }}
-                >
-                  <span className="text-sm leading-none">{sp.emoji}</span>
-                  {sp.name}
-                </button>
-              );
-            })}
-          </div>
+          <div className="h-px bg-white/8 shrink-0" />
+
+          {/* Distribution — compact */}
+          <section className="flex flex-col gap-1.5">
+            <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Distribution</h2>
+            <div className="flex flex-col gap-1">
+              {distItems.map(({ type, pct, info }) => (
+                <div key={type} className="flex items-center gap-1.5">
+                  <img src={info?.img} alt={info?.name} className="w-4 h-4 object-contain shrink-0" />
+                  <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${pct}%`, backgroundColor: info?.bg }}
+                    />
+                  </div>
+                  <span className="text-[9px] text-white/35 w-6 text-right tabular-nums shrink-0">{pct}%</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Spacer pushes actions to bottom */}
+          <div className="flex-1" />
 
           {/* Actions */}
-          <div className="flex flex-col gap-2">
-            <button className="btn-play text-sm py-2.5 px-4" onClick={handlePlay}>
+          <section className="flex flex-col gap-3 shrink-0">
+            <button className="btn-play text-sm py-2.5 px-2" onClick={handlePlay}>
               ▶ Play Level
             </button>
-            <button
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl px-4 py-2.5 text-sm cursor-pointer transition-colors"
-              onClick={handleExport}
-            >
-              ↓ Export JSON
-            </button>
-            <label className="bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl px-4 py-2.5 text-sm cursor-pointer transition-colors text-center">
-              ↑ Import JSON
-              <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-            </label>
-          </div>
+            <div className="flex gap-1.5">
+              <button
+                className="flex-1 bg-white/8 hover:bg-white/15 border border-white/15 text-white/70
+                           rounded-xl py-2 text-xs cursor-pointer transition-colors"
+                onClick={handleExport}
+              >
+                ↓ Export
+              </button>
+              <label
+                className="flex-1 bg-white/8 hover:bg-white/15 border border-white/15 text-white/70
+                            rounded-xl py-2 text-xs cursor-pointer transition-colors text-center"
+              >
+                ↑ Import
+                <input type="file" accept=".json" className="hidden" onChange={handleImport} />
+              </label>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL: Grid preview ─────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col items-center justify-center min-w-0 gap-2 p-4">
+        {/* Coord hint */}
+        <p className="text-white/25 text-[10px] h-3.5 tabular-nums">
+          {hovered ? `row ${hovered[0]},  col ${hovered[1]}` : ''}
+        </p>
+
+        {/* Grid */}
+        <div
+          className="touch-none select-none"
+          onPointerDown={() => {
+            isPainting.current = true;
+          }}
+          onPointerLeave={() => {
+            setHovered(null);
+            isPainting.current = false;
+          }}
+        >
+          {grid.map((row, r) => (
+            <div key={r} className="flex">
+              {row.map((type, c) => {
+                const { bg, border, img } = getCellStyle(type);
+                const isHov = hovered?.[0] === r && hovered?.[1] === c;
+                return (
+                  <div
+                    key={c}
+                    className="w-9 h-9 m-px rounded-md cursor-crosshair border-2 flex items-center justify-center
+                               overflow-hidden transition-transform duration-75"
+                    style={{
+                      backgroundColor: bg,
+                      borderColor: border,
+                      transform: isHov ? 'scale(1.18)' : 'scale(1)',
+                      zIndex: isHov ? 10 : 0,
+                      boxShadow: isHov ? `0 0 10px ${border}` : 'none',
+                    }}
+                    onPointerOver={(e) => {
+                      e.stopPropagation();
+                      setHovered([r, c]);
+                    }}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      handleCellDown(r, c);
+                    }}
+                    onPointerEnter={() => handleCellEnter(r, c)}
+                  >
+                    {img && <img src={img} alt="" className="w-full h-full object-contain pointer-events-none" />}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom helpers */}
+        <div className="flex gap-4 items-center flex-wrap justify-center pt-1">
+          <button
+            className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer"
+            onClick={() => push(makeEmptyGrid())}
+          >
+            🗑️ Clear
+          </button>
+          <button
+            className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer"
+            onClick={() => push(makeRandomGrid(maxType))}
+          >
+            ↺ Randomize
+          </button>
+          <button
+            title="Load a provably-deadlocked board to test auto-shuffle"
+            className="text-xs text-orange/50 hover:text-orange transition-colors cursor-pointer"
+            onClick={() => push(makeDeadlockGrid(maxType))}
+          >
+            🔒 Deadlock
+          </button>
+          <span className="text-white/15 text-[10px] tabular-nums">
+            {COLUMNS} × {ROWS}
+          </span>
         </div>
       </div>
     </div>

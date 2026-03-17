@@ -23,31 +23,31 @@ export type Match3Orientation = 'horizontal' | 'vertical';
  * @returns A 2D array filled up with types
  */
 export function match3CreateGrid(rows = 6, columns = 6, types: Match3Type[]) {
-    const grid: Match3Grid = [];
+  const grid: Match3Grid = [];
 
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < columns; c++) {
-            let type = match3GetRandomType(types);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < columns; c++) {
+      let type = match3GetRandomType(types);
 
-            // List of rejected types for this position, to prevent them to be picked again
-            const excludeList: Match3Type[] = [];
+      // List of rejected types for this position, to prevent them to be picked again
+      const excludeList: Match3Type[] = [];
 
-            // If the new type match previous types, randomise it again, excluding rejected type
-            // to avoid building the grid with pre-made matches
-            while (matchPreviousTypes(grid, { row: r, column: c }, type)) {
-                excludeList.push(type);
-                type = match3GetRandomType(types, excludeList);
-            }
+      // If the new type match previous types, randomise it again, excluding rejected type
+      // to avoid building the grid with pre-made matches
+      while (matchPreviousTypes(grid, { row: r, column: c }, type)) {
+        excludeList.push(type);
+        type = match3GetRandomType(types, excludeList);
+      }
 
-            // Create the new row if not exists
-            if (!grid[r]) grid[r] = [];
+      // Create the new row if not exists
+      if (!grid[r]) grid[r] = [];
 
-            // Set type for the grid position
-            grid[r][c] = type;
-        }
+      // Set type for the grid position
+      grid[r][c] = type;
     }
+  }
 
-    return grid as Match3Grid;
+  return grid as Match3Grid;
 }
 
 /**
@@ -56,27 +56,27 @@ export function match3CreateGrid(rows = 6, columns = 6, types: Match3Type[]) {
  * @returns A copy of the original grid
  */
 export function match3CloneGrid(grid: Match3Grid) {
-    const clone: Match3Grid = [];
-    for (const row of grid) {
-        clone.push(row.slice());
-    }
-    return clone;
+  const clone: Match3Grid = [];
+  for (const row of grid) {
+    clone.push(row.slice());
+  }
+  return clone;
 }
 
 /** Check if given type match previous positions in the grid  */
 function matchPreviousTypes(grid: Match3Grid, position: Match3Position, type: Match3Type) {
-    // Check if previous horizontal positions are forming a match
-    const horizontal1 = grid?.[position.row]?.[position.column - 1];
-    const horizontal2 = grid?.[position.row]?.[position.column - 2];
-    const horizontalMatch = type === horizontal1 && type === horizontal2;
+  // Check if previous horizontal positions are forming a match
+  const horizontal1 = grid?.[position.row]?.[position.column - 1];
+  const horizontal2 = grid?.[position.row]?.[position.column - 2];
+  const horizontalMatch = type === horizontal1 && type === horizontal2;
 
-    // Check if previous vertical positions are forming a match
-    const vertical1 = grid?.[position.row - 1]?.[position.column];
-    const vertical2 = grid?.[position.row - 2]?.[position.column];
-    const verticalMatch = type === vertical1 && type === vertical2;
+  // Check if previous vertical positions are forming a match
+  const vertical1 = grid?.[position.row - 1]?.[position.column];
+  const vertical2 = grid?.[position.row - 2]?.[position.column];
+  const verticalMatch = type === vertical1 && type === vertical2;
 
-    // Return if either horizontal or vertical psoitions are forming a match
-    return horizontalMatch || verticalMatch;
+  // Return if either horizontal or vertical psoitions are forming a match
+  return horizontalMatch || verticalMatch;
 }
 
 /**
@@ -86,16 +86,16 @@ function matchPreviousTypes(grid: Match3Grid, position: Match3Position, type: Ma
  * @returns A random type picked from the given list
  */
 export function match3GetRandomType(types: Match3Type[], exclude?: Match3Type[]) {
-    let list = [...types];
+  let list = [...types];
 
-    if (exclude) {
-        // If exclude list is provided, exclude them from the available list
-        list = types.filter((type) => !exclude.includes(type));
-    }
+  if (exclude) {
+    // If exclude list is provided, exclude them from the available list
+    list = types.filter((type) => !exclude.includes(type));
+  }
 
-    const index = Math.floor(Math.random() * list.length);
+  const index = Math.floor(Math.random() * list.length);
 
-    return list[index];
+  return list[index];
 }
 
 /**
@@ -105,14 +105,14 @@ export function match3GetRandomType(types: Match3Type[], exclude?: Match3Type[])
  * @param positionB The second piece to swap
  */
 export function match3SwapPieces(grid: Match3Grid, positionA: Match3Position, positionB: Match3Position) {
-    const typeA = match3GetPieceType(grid, positionA);
-    const typeB = match3GetPieceType(grid, positionB);
+  const typeA = match3GetPieceType(grid, positionA);
+  const typeB = match3GetPieceType(grid, positionB);
 
-    // Only swap pieces if both types are valid (not undefined)
-    if (typeA !== undefined && typeB !== undefined) {
-        match3SetPieceType(grid, positionA, typeB);
-        match3SetPieceType(grid, positionB, typeA);
-    }
+  // Only swap pieces if both types are valid (not undefined)
+  if (typeA !== undefined && typeB !== undefined) {
+    match3SetPieceType(grid, positionA, typeB);
+    match3SetPieceType(grid, positionB, typeA);
+  }
 }
 
 /**
@@ -122,7 +122,7 @@ export function match3SwapPieces(grid: Match3Grid, positionA: Match3Position, po
  * @param type The new type for given position
  */
 export function match3SetPieceType(grid: Match3Grid, position: Match3Position, type: number) {
-    grid[position.row][position.column] = type;
+  grid[position.row][position.column] = type;
 }
 
 /**
@@ -132,7 +132,7 @@ export function match3SetPieceType(grid: Match3Grid, position: Match3Position, t
  * @returns The piece type from given position, undefined if position is invalid
  */
 export function match3GetPieceType(grid: Match3Grid, position: Match3Position) {
-    return grid?.[position.row]?.[position.column];
+  return grid?.[position.row]?.[position.column];
 }
 
 /**
@@ -142,9 +142,9 @@ export function match3GetPieceType(grid: Match3Grid, position: Match3Position) {
  * @returns True if position exists in the grid, false if out-of-bounds
  */
 export function match3IsValidPosition(grid: Match3Grid, position: Match3Position) {
-    const rows = grid.length;
-    const cols = grid[0].length;
-    return position.row >= 0 && position.row < rows && position.column >= 0 && position.column < cols;
+  const rows = grid.length;
+  const cols = grid[0].length;
+  return position.row >= 0 && position.row < rows && position.column >= 0 && position.column < cols;
 }
 
 /**
@@ -153,11 +153,11 @@ export function match3IsValidPosition(grid: Match3Grid, position: Match3Position
  * @param fn Callback for each position in the grid
  */
 export function match3ForEach(grid: Match3Grid, fn: (position: Match3Position, type: Match3Type) => void) {
-    for (let r = 0; r < grid.length; r++) {
-        for (let c = 0; c < grid[r].length; c++) {
-            fn({ row: r, column: c }, grid[r][c]);
-        }
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      fn({ row: r, column: c }, grid[r][c]);
     }
+  }
 }
 
 /**
@@ -168,49 +168,49 @@ export function match3ForEach(grid: Match3Grid, fn: (position: Match3Position, t
  * @returns
  */
 function match3GetMatchesByOrientation(grid: Match3Grid, matchSize: number, orientation: Match3Orientation) {
-    const matches = [];
-    const rows = grid.length;
-    const columns = grid[0].length;
-    let lastType = undefined;
-    let currentMatch: Match3Position[] = [];
+  const matches = [];
+  const rows = grid.length;
+  const columns = grid[0].length;
+  let lastType = undefined;
+  let currentMatch: Match3Position[] = [];
 
-    // Define primary and secondary orientations for the loop
-    const primary = orientation === 'horizontal' ? rows : columns;
-    const secondary = orientation === 'horizontal' ? columns : rows;
+  // Define primary and secondary orientations for the loop
+  const primary = orientation === 'horizontal' ? rows : columns;
+  const secondary = orientation === 'horizontal' ? columns : rows;
 
-    for (let p = 0; p < primary; p++) {
-        for (let s = 0; s < secondary; s++) {
-            // On horizontal 'p' is row and 's' is column, vertical is opposite
-            const row = orientation === 'horizontal' ? p : s;
-            const column = orientation === 'horizontal' ? s : p;
-            const type = grid[row][column];
+  for (let p = 0; p < primary; p++) {
+    for (let s = 0; s < secondary; s++) {
+      // On horizontal 'p' is row and 's' is column, vertical is opposite
+      const row = orientation === 'horizontal' ? p : s;
+      const column = orientation === 'horizontal' ? s : p;
+      const type = grid[row][column];
 
-            if (type && type === lastType) {
-                // Type is the same as the last type, append to the match list
-                currentMatch.push({ row, column });
-            } else {
-                // Type is different from last - check current match length and append it to the results if suitable
-                if (currentMatch.length >= matchSize) {
-                    matches.push(currentMatch);
-                }
-                // Start a new match
-                currentMatch = [{ row, column }];
-                // Save last type to check in the next pass
-                lastType = type;
-            }
-        }
-
-        // Row (or column) finished. Append current match if suitable
+      if (type && type === lastType) {
+        // Type is the same as the last type, append to the match list
+        currentMatch.push({ row, column });
+      } else {
+        // Type is different from last - check current match length and append it to the results if suitable
         if (currentMatch.length >= matchSize) {
-            matches.push(currentMatch);
+          matches.push(currentMatch);
         }
-
-        // Cleanup before mmoving to the next row (or column)
-        lastType = undefined;
-        currentMatch = [];
+        // Start a new match
+        currentMatch = [{ row, column }];
+        // Save last type to check in the next pass
+        lastType = type;
+      }
     }
 
-    return matches;
+    // Row (or column) finished. Append current match if suitable
+    if (currentMatch.length >= matchSize) {
+      matches.push(currentMatch);
+    }
+
+    // Cleanup before mmoving to the next row (or column)
+    lastType = undefined;
+    currentMatch = [];
+  }
+
+  return matches;
 }
 
 /**
@@ -220,7 +220,7 @@ function match3GetMatchesByOrientation(grid: Match3Grid, matchSize: number, orie
  * @returns True if position A row & column are the same of position B
  */
 export function match3ComparePositions(a: Match3Position, b: Match3Position) {
-    return a.row === b.row && a.column == b.column;
+  return a.row === b.row && a.column == b.column;
 }
 
 /**
@@ -230,10 +230,10 @@ export function match3ComparePositions(a: Match3Position, b: Match3Position) {
  * @returns True if position list contains the provided position, false otherwise
  */
 export function match3IncludesPosition(positions: Match3Position[], position: Match3Position) {
-    for (const p of positions) {
-        if (match3ComparePositions(p, position)) return true;
-    }
-    return false;
+  for (const p of positions) {
+    if (match3ComparePositions(p, position)) return true;
+  }
+  return false;
 }
 
 /**
@@ -247,36 +247,36 @@ export function match3IncludesPosition(positions: Match3Position[], position: Ma
  * @returns A list of positions grouped by match, excluding ones not involving filter positions if provided
  */
 export function match3GetMatches(grid: Match3Grid, filter?: Match3Position[], matchSize = 3) {
-    const allMatches = [
-        ...match3GetMatchesByOrientation(grid, matchSize, 'horizontal'),
-        ...match3GetMatchesByOrientation(grid, matchSize, 'vertical'),
-    ];
+  const allMatches = [
+    ...match3GetMatchesByOrientation(grid, matchSize, 'horizontal'),
+    ...match3GetMatchesByOrientation(grid, matchSize, 'vertical'),
+  ];
 
-    if (!filter) {
-        // Return all matches found if filter is not provided
-        return allMatches;
+  if (!filter) {
+    // Return all matches found if filter is not provided
+    return allMatches;
+  }
+
+  // List of matches that involves positions in the provided filter
+  const filteredMatches = [];
+
+  for (const match of allMatches) {
+    let valid = false;
+    for (const position of match) {
+      // Compare each position of the match to see if includes one of the filter positions
+      for (const filterPosition of filter) {
+        const same = match3ComparePositions(position, filterPosition);
+        if (same) valid = true;
+      }
     }
 
-    // List of matches that involves positions in the provided filter
-    const filteredMatches = [];
-
-    for (const match of allMatches) {
-        let valid = false;
-        for (const position of match) {
-            // Compare each position of the match to see if includes one of the filter positions
-            for (const filterPosition of filter) {
-                const same = match3ComparePositions(position, filterPosition);
-                if (same) valid = true;
-            }
-        }
-
-        if (valid) {
-            // If match is valid (contains one of the filter positions), append that to the filtered list
-            filteredMatches.push(match);
-        }
+    if (valid) {
+      // If match is valid (contains one of the filter positions), append that to the filtered list
+      filteredMatches.push(match);
     }
+  }
 
-    return filteredMatches;
+  return filteredMatches;
 }
 
 /**
@@ -286,38 +286,38 @@ export function match3GetMatches(grid: Match3Grid, filter?: Match3Position[], ma
  * Ex.: [[{row: 1, column: 1}, {row: 2, column: 1}]] - That piece moved 1 row down
  */
 export function match3ApplyGravity(grid: Match3Grid) {
-    const rows = grid.length;
-    const columns = grid[0].length;
-    const changes: Match3Position[][] = [];
-    for (let r = rows - 1; r >= 0; r--) {
-        for (let c = 0; c < columns; c++) {
-            let position = { row: r, column: c };
-            const belowPosition = { row: r + 1, column: c };
-            let hasChanged = false;
+  const rows = grid.length;
+  const columns = grid[0].length;
+  const changes: Match3Position[][] = [];
+  for (let r = rows - 1; r >= 0; r--) {
+    for (let c = 0; c < columns; c++) {
+      let position = { row: r, column: c };
+      const belowPosition = { row: r + 1, column: c };
+      let hasChanged = false;
 
-            // Skip this one if position below is out of bounds
-            if (!match3IsValidPosition(grid, belowPosition)) continue;
+      // Skip this one if position below is out of bounds
+      if (!match3IsValidPosition(grid, belowPosition)) continue;
 
-            // Retrive ethe type of the position below
-            let belowType = match3GetPieceType(grid, belowPosition);
+      // Retrive ethe type of the position below
+      let belowType = match3GetPieceType(grid, belowPosition);
 
-            // Keep moving the piece down if position below is valid and empty
-            while (match3IsValidPosition(grid, belowPosition) && belowType === 0) {
-                hasChanged = true;
-                match3SwapPieces(grid, position, belowPosition);
-                position = { ...belowPosition };
-                belowPosition.row += 1;
-                belowType = match3GetPieceType(grid, belowPosition);
-            }
+      // Keep moving the piece down if position below is valid and empty
+      while (match3IsValidPosition(grid, belowPosition) && belowType === 0) {
+        hasChanged = true;
+        match3SwapPieces(grid, position, belowPosition);
+        position = { ...belowPosition };
+        belowPosition.row += 1;
+        belowType = match3GetPieceType(grid, belowPosition);
+      }
 
-            if (hasChanged) {
-                // Append a new change if position has changed [<from>, <to>]
-                changes.push([{ row: r, column: c }, position]);
-            }
-        }
+      if (hasChanged) {
+        // Append a new change if position has changed [<from>, <to>]
+        changes.push([{ row: r, column: c }, position]);
+      }
     }
+  }
 
-    return changes;
+  return changes;
 }
 
 /**
@@ -326,17 +326,17 @@ export function match3ApplyGravity(grid: Match3Grid) {
  * @returns A list of empty positions
  */
 export function match3GetEmptyPositions(grid: Match3Grid) {
-    const positions: Match3Position[] = [];
-    const rows = grid.length;
-    const columns = grid[0].length;
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < columns; c++) {
-            if (!grid[r][c]) {
-                positions.push({ row: r, column: c });
-            }
-        }
+  const positions: Match3Position[] = [];
+  const rows = grid.length;
+  const columns = grid[0].length;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < columns; c++) {
+      if (!grid[r][c]) {
+        positions.push({ row: r, column: c });
+      }
     }
-    return positions;
+  }
+  return positions;
 }
 
 /**
@@ -345,12 +345,12 @@ export function match3GetEmptyPositions(grid: Match3Grid) {
  * @returns String representing the grid
  */
 export function match3GridToString(grid: Match3Grid) {
-    const lines: string[] = [];
-    for (const row of grid) {
-        const list = row.map((type) => String(type).padStart(2, '0'));
-        lines.push('|' + list.join('|') + '|');
-    }
-    return lines.join('\n');
+  const lines: string[] = [];
+  for (const row of grid) {
+    const list = row.map((type) => String(type).padStart(2, '0'));
+    lines.push('|' + list.join('|') + '|');
+  }
+  return lines.join('\n');
 }
 
 /**
@@ -360,23 +360,23 @@ export function match3GridToString(grid: Match3Grid) {
  * @returns A list with all positions that have their types changed from empty (0) to something
  */
 export function match3FillUp(grid: Match3Grid, types: Match3Type[]) {
-    // Create a temp grid that will provide pieces to fill up corresponding slots
-    // using the same grid creation algorithm to avoid pre-made combinations
-    const tempGrid = match3CreateGrid(grid.length, grid[0].length, types);
+  // Create a temp grid that will provide pieces to fill up corresponding slots
+  // using the same grid creation algorithm to avoid pre-made combinations
+  const tempGrid = match3CreateGrid(grid.length, grid[0].length, types);
 
-    const rows = grid.length;
-    const columns = grid[0].length;
-    const newPositions: Match3Position[] = [];
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < columns; c++) {
-            if (!grid[r][c]) {
-                grid[r][c] = tempGrid[r][c];
-                newPositions.push({ row: r, column: c });
-            }
-        }
+  const rows = grid.length;
+  const columns = grid[0].length;
+  const newPositions: Match3Position[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < columns; c++) {
+      if (!grid[r][c]) {
+        grid[r][c] = tempGrid[r][c];
+        newPositions.push({ row: r, column: c });
+      }
     }
+  }
 
-    return newPositions.reverse();
+  return newPositions.reverse();
 }
 
 /**
@@ -385,18 +385,18 @@ export function match3FillUp(grid: Match3Grid, types: Match3Type[]) {
  * @returns A new list without repeated positions
  */
 export function match3FilterUniquePositions(positions: Match3Position[]) {
-    const result: Match3Position[] = [];
-    const register: string[] = [];
+  const result: Match3Position[] = [];
+  const register: string[] = [];
 
-    for (const position of positions) {
-        const id = position.row + ':' + position.column;
-        if (!register.includes(id)) {
-            register.push(id);
-            result.push(position);
-        }
+  for (const position of positions) {
+    const id = position.row + ':' + position.column;
+    if (!register.includes(id)) {
+      register.push(id);
+      result.push(position);
     }
+  }
 
-    return result;
+  return result;
 }
 
 /**
@@ -405,7 +405,7 @@ export function match3FilterUniquePositions(positions: Match3Position[]) {
  * @returns A string representation of the position. Ex.: {row: 3, column: 1} => "3:1"
  */
 export function match3PositionToString(position: Match3Position) {
-    return position.row + ':' + position.column;
+  return position.row + ':' + position.column;
 }
 
 /**
@@ -414,6 +414,106 @@ export function match3PositionToString(position: Match3Position) {
  * @returns A position object. Ex.: "3:1" => {row: 3, column: 1}
  */
 export function match3StringToPosition(str: string) {
-    const split = str.split(':');
-    return { row: Number(split[0]), column: Number(split[1]) };
+  const split = str.split(':');
+  return { row: Number(split[0]), column: Number(split[1]) };
+}
+
+/**
+ * Check if there is at least one valid move remaining in the grid.
+ * A valid move is a swap of two adjacent common-type pieces that would result in a match.
+ * @param grid The grid to be checked
+ * @param commonTypes The list of common (non-special) piece types
+ * @returns True if at least one valid move exists
+ */
+export function match3HasPossibleMoves(grid: Match3Grid, commonTypes: Match3Type[]): boolean {
+  const rows = grid.length;
+  const columns = grid[0].length;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < columns; c++) {
+      const type = grid[r][c];
+      if (!commonTypes.includes(type)) continue;
+
+      // Check swap with right neighbour
+      if (c + 1 < columns && commonTypes.includes(grid[r][c + 1])) {
+        const clone = match3CloneGrid(grid);
+        match3SwapPieces(clone, { row: r, column: c }, { row: r, column: c + 1 });
+        if (
+          match3GetMatches(clone, [
+            { row: r, column: c },
+            { row: r, column: c + 1 },
+          ]).length > 0
+        ) {
+          return true;
+        }
+      }
+
+      // Check swap with bottom neighbour
+      if (r + 1 < rows && commonTypes.includes(grid[r + 1][c])) {
+        const clone = match3CloneGrid(grid);
+        match3SwapPieces(clone, { row: r, column: c }, { row: r + 1, column: c });
+        if (
+          match3GetMatches(clone, [
+            { row: r, column: c },
+            { row: r + 1, column: c },
+          ]).length > 0
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Shuffle all common-type pieces in the grid in place, ensuring no pre-made matches
+ * and at least one valid move exists after shuffling.
+ * @param grid The grid to be shuffled (modified in place)
+ * @param commonTypes The list of common (non-special) piece types
+ * @returns The list of positions whose types were changed
+ */
+export function match3ShuffleGrid(grid: Match3Grid, commonTypes: Match3Type[]): Match3Position[] {
+  // Collect all positions that hold a common-type piece
+  const positions: Match3Position[] = [];
+  const types: Match3Type[] = [];
+
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[0].length; c++) {
+      if (commonTypes.includes(grid[r][c])) {
+        positions.push({ row: r, column: c });
+        types.push(grid[r][c]);
+      }
+    }
+  }
+
+  // Fisher-Yates shuffle, retry until the result has no pre-made matches and has valid moves
+  let attempts = 0;
+  let valid = false;
+
+  while (!valid && attempts < 100) {
+    for (let i = types.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [types[i], types[j]] = [types[j], types[i]];
+    }
+
+    // Test the shuffled arrangement on a clone before committing
+    const testGrid = match3CloneGrid(grid);
+    for (let i = 0; i < positions.length; i++) {
+      testGrid[positions[i].row][positions[i].column] = types[i];
+    }
+
+    const noPreMadeMatches = match3GetMatches(testGrid).length === 0;
+    const hasMoves = match3HasPossibleMoves(testGrid, commonTypes);
+    valid = noPreMadeMatches && hasMoves;
+    attempts++;
+  }
+
+  // Apply final arrangement to the real grid
+  for (let i = 0; i < positions.length; i++) {
+    grid[positions[i].row][positions[i].column] = types[i];
+  }
+
+  return positions;
 }
