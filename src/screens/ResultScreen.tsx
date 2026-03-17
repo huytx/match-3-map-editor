@@ -22,9 +22,12 @@ export const ResultScreenView = () => {
   const performance = userStats.load(mode);
   const bestScore = userStats.loadBestScore(mode);
   const { score = 0, grade = 0 } = performance;
+  const clearedByName =
+    (performance as typeof performance & { clearedByName?: Record<string, number> }).clearedByName ?? {};
   const isBest = !editorPreview && score > 0 && score >= bestScore;
 
   useEffect(() => {
+    console.log('[Result] clearedByName:', clearedByName);
     requestAnimationFrame(() => ref.current?.classList.add('screen-visible'));
   }, []);
 

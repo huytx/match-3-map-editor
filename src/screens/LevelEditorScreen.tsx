@@ -207,11 +207,20 @@ export const LevelEditorScreenView = () => {
   const initialMode = snapshot?.mode ?? 'normal';
   const initialDuration = snapshot?.duration ?? 60;
   const initialLevelName = snapshot?.levelName ?? '';
+  const initialGoals = snapshot?.goals ?? {};
 
   // Config
   const [mode, setMode] = useState<Match3Mode>(initialMode);
   const [duration, setDuration] = useState(initialDuration);
   const [levelName, setLevelName] = useState(initialLevelName);
+  // Goals: piece name → required count (0 = disabled)
+  const [goals, setGoals] = useState<Record<string, number>>(initialGoals);
+  const goalsEnabled = Object.values(goals).some((v) => v > 0);
+
+  const setGoalCount = (name: string, count: number) => setGoals((g) => ({ ...g, [name]: Math.max(0, count) }));
+
+  // Active goals (count > 0) passed to level config
+  const activeGoals = Object.fromEntries(Object.entries(goals).filter(([, v]) => v > 0));
 
   // Grid history — start from snapshot or empty
   const { grid, push, undo, redo, canUndo, canRedo } = useHistory(initialGrid);
@@ -331,7 +340,7 @@ export const LevelEditorScreenView = () => {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handlePlay = () => {
-    saveSnapshot({ grid, mode, duration, levelName });
+    saveSnapshot({ grid, mode, duration, levelName, goals });
     setPendingLevel({
       rows: ROWS,
       columns: COLUMNS,
@@ -341,6 +350,7 @@ export const LevelEditorScreenView = () => {
       mode,
       levelName: levelName || undefined,
       grid: resolveGrid(),
+      goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
     });
     navigate('game');
   };
@@ -355,6 +365,7 @@ export const LevelEditorScreenView = () => {
       duration,
       mode,
       grid: resolveGrid(),
+      goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -376,6 +387,7 @@ export const LevelEditorScreenView = () => {
         setMode(m);
         setDuration(Math.max(30, Math.min(300, Number(data.duration) || 60)));
         setLevelName(data.levelName ?? '');
+        setGoals(typeof data.goals === 'object' && data.goals ? data.goals : {});
         push(Array.isArray(data.grid) ? adaptGrid(data.grid, PIECE_COUNT[m]) : makeEmptyGrid());
       } catch {
         /* ignore bad JSON */
@@ -552,6 +564,47 @@ export const LevelEditorScreenView = () => {
                   <span className="text-[9px] text-white/35 w-6 text-right tabular-nums shrink-0">{pct}%</span>
                 </div>
               ))}
+            </div>
+          </section>
+
+          <div className="h-px bg-white/8 shrink-0" />
+
+          {/* Goals */}
+          <section className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Goals</h2>
+              <span className="text-[9px] text-white/30">{goalsEnabled ? 'clear to win' : 'off'}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              {PIECE_INFO.slice(0, maxType).map((info) => {
+                const name = `piece-${info.name.toLowerCase()}`;
+                const val = goals[name] ?? 0;
+                return (
+                  <div key={name} className="flex items-center gap-1.5">
+                    <img src={info.img} alt={info.name} className="w-4 h-4 object-contain shrink-0" />
+                    <div
+                      className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden cursor-pointer"
+                      title={`${info.name}: ${val} required`}
+                    >
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{ width: val > 0 ? '100%' : '0%', backgroundColor: info.bg }}
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={999}
+                      step={5}
+                      value={val || ''}
+                      placeholder="0"
+                      onChange={(e) => setGoalCount(name, Number(e.target.value) || 0)}
+                      className="w-14 bg-white/5 border border-white/10 text-white text-[12px] text-center rounded px-0.5 py-0.5 outline-none tabular-nums"
+                      style={{ borderColor: val > 0 ? info.bg + '80' : undefined }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </section>
 

@@ -5,18 +5,28 @@ import { isEditorPreview, clearEditorPreview } from '@/utils/levelBridge';
 
 export const GameScreenUIView = () => {
   const { navigate } = useNavigation();
-  const [hud, setHud] = useState({ timeRemaining: 0, score: 0 });
+  const [hud, setHud] = useState({
+    timeRemaining: 0,
+    score: 0,
+    clearedPieces: 0,
+    clearedByName: {} as Record<string, number>,
+  });
   const [editorPreview] = useState(() => isEditorPreview());
 
   useEffect(() => {
-    const handler = (data: { timeRemaining: number; score: number }) => setHud(data);
+    const handler = (data: {
+      timeRemaining: number;
+      score: number;
+      clearedPieces: number;
+      clearedByName: Record<string, number>;
+    }) => setHud(data);
     eventEmitter.on('hud:update', handler);
     return () => {
       eventEmitter.off('hud:update', handler);
     };
   }, []);
 
-  const { timeRemaining, score } = hud;
+  const { timeRemaining, score, clearedByName } = hud;
   const minutes = Math.floor(timeRemaining / 60000);
   const seconds = Math.floor(timeRemaining / 1000) % 60;
   const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;

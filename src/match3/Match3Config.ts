@@ -41,6 +41,8 @@ export interface Match3Config {
   levelName?: string;
   /** Optional preset grid (used by the level editor). Row×column matrix of type numbers (1-based). */
   grid?: Match3Grid;
+  /** Optional clear goals: piece name → required count. When set, clearing all goals wins the level early. */
+  goals?: Record<string, number>;
 }
 
 /** Default match3 configuration */

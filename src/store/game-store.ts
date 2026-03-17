@@ -7,6 +7,7 @@ export interface EditorSnapshot {
   mode: Match3Mode;
   duration: number;
   levelName: string;
+  goals: Record<string, number>;
 }
 
 interface EditorModel {
