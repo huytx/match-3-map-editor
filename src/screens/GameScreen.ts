@@ -47,6 +47,8 @@ export class GameScreen extends Container {
   public readonly vfx?: GameEffects;
   /** Set to true when gameplay is finished */
   private finished = false;
+  /** Remaining moves (0 means unlimited) */
+  private movesLeft = 0;
 
   constructor() {
     super();
@@ -113,6 +115,7 @@ export class GameScreen extends Container {
         });
 
     this.finished = false;
+    this.movesLeft = match3Config.maxMoves ?? 0;
     this.shelf?.setup(match3Config);
     this.match3.setup(match3Config);
     this.pauseButton.hide(false);
@@ -131,6 +134,9 @@ export class GameScreen extends Container {
       score: this.match3.stats.getScore(),
       clearedPieces: this.match3.stats.getClearedPieces(),
       clearedByName: this.match3.stats.getClearedByName(),
+      goals: this.match3.config.goals ?? {},
+      movesLeft: this.movesLeft,
+      maxMoves: this.match3.config.maxMoves ?? 0,
     });
   }
 
@@ -198,6 +204,9 @@ export class GameScreen extends Container {
   /** Fired when the player moves a piece */
   private onMove(data: Match3OnMoveData) {
     this.vfx?.onMove(data);
+    if (this.match3.config.maxMoves && data.valid) {
+      this.movesLeft = Math.max(0, this.movesLeft - 1);
+    }
   }
 
   /** Fired when match3 detects one or more matches in the grid */
@@ -222,6 +231,12 @@ export class GameScreen extends Container {
     this.comboLevel.hide();
     // Check if all clear goals are met
     if (this.goalsCompleted()) {
+      this.match3.stopPlaying();
+      this.finish();
+      return;
+    }
+    // Check if moves are exhausted
+    if (this.match3.config.maxMoves && this.movesLeft <= 0) {
       this.match3.stopPlaying();
       this.finish();
       return;

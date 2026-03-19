@@ -1,0 +1,30 @@
+import type { Match3Mode } from '@/match3/Match3Config';
+
+export const ROWS = 9;
+export const COLUMNS = 7;
+
+export const PIECE_COUNT: Record<Match3Mode, number> = {
+  test: 3,
+  easy: 4,
+  normal: 5,
+  hard: 6,
+};
+
+export const PIECE_INFO = [
+  { name: 'Dragon', bg: '#e8412b', img: '/assets/editor/piece-dragon.png' },
+  { name: 'Frog', bg: '#4abe50', img: '/assets/editor/piece-frog.png' },
+  { name: 'Newt', bg: '#4287f5', img: '/assets/editor/piece-newt.png' },
+  { name: 'Snake', bg: '#d4e84b', img: '/assets/editor/piece-snake.png' },
+  { name: 'Spider', bg: '#9b4be8', img: '/assets/editor/piece-spider.png' },
+  { name: 'Yeti', bg: '#a8e4f0', img: '/assets/editor/piece-yeti.png' },
+] as const;
+
+export const SPECIAL_INFO = [
+  { name: 'Blast', key: 'special-blast', bg: '#ff9235', img: '/assets/editor/special-blast.png' },
+  { name: 'Row', key: 'special-row', bg: '#e84b9b', img: '/assets/editor/special-row.png' },
+  { name: 'Column', key: 'special-column', bg: '#4be8c8', img: '/assets/editor/special-column.png' },
+  { name: 'Colour', key: 'special-colour', bg: '#ffd579', img: '/assets/editor/special-colour.png' },
+] as const;
+
+export type PaletteEntry = { kind: 'piece'; type: number } | { kind: 'special'; index: number };
+export type ToolMode = 'paint' | 'fill' | 'remove';

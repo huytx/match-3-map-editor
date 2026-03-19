@@ -43,6 +43,8 @@ export interface Match3Config {
   grid?: Match3Grid;
   /** Optional clear goals: piece name → required count. When set, clearing all goals wins the level early. */
   goals?: Record<string, number>;
+  /** Optional move limit. When set, the game also ends when the player exhausts all moves. */
+  maxMoves?: number;
 }
 
 /** Default match3 configuration */

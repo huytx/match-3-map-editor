@@ -6,6 +6,8 @@ export interface EditorSnapshot {
   grid: number[][];
   mode: Match3Mode;
   duration: number;
+  /** Max moves limit (0 = no limit) */
+  movesLimit: number;
   levelName: string;
   goals: Record<string, number>;
 }

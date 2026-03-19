@@ -1,4 +1,5 @@
 import { Match3, Match3OnMatchData, Match3OnPopData } from './Match3';
+import { Match3Type } from './Match3Utility';
 
 /** Default gameplay stats data */
 const defaultStatsData = {
@@ -45,6 +46,7 @@ export class Match3Stats {
     this.data.pops += 1;
     if (data.isSpecial) {
       this.data.specials += 1;
+      // Special goals are counted at spawn time (registerSpawn), not at activation
     } else {
       this.data.clearedPieces += 1;
       const name = this.match3.board.typesMap[data.type];
@@ -56,6 +58,15 @@ export class Match3Stats {
    * Update stats params based on given match data
    * @param data The match data
    */
+  /**
+   * Track a special piece being spawned onto the board (counts toward special goals)
+   * @param type The type of the special piece spawned
+   */
+  public registerSpawn(type: Match3Type) {
+    const name = this.match3.board.typesMap[type];
+    if (name) this.data.clearedByName[name] = (this.data.clearedByName[name] ?? 0) + 1;
+  }
+
   public registerMatch(data: Match3OnMatchData) {
     for (const match of data.matches) {
       const points = match.length + data.matches.length * data.combo;

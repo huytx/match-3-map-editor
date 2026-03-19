@@ -1,0 +1,106 @@
+import { PIECE_INFO, SPECIAL_INFO } from './constants';
+import type { PaletteEntry, ToolMode } from './constants';
+
+interface Props {
+  onClose: () => void;
+  palette: PaletteEntry;
+  onPaletteChange: (p: PaletteEntry) => void;
+  tool: ToolMode;
+  onToolChange: (t: ToolMode) => void;
+  maxType: number;
+}
+
+export function BrushPickerOverlay({ onClose, palette, onPaletteChange, tool, onToolChange, maxType }: Props) {
+  return (
+    <div
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="flex flex-col gap-3 bg-[#170e2b] border border-white/15 rounded-2xl p-4
+                   max-h-[85vh] overflow-y-auto w-64 shadow-xl"
+        style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.7)' }}
+      >
+        <div className="flex items-center justify-between shrink-0">
+          <h3 className="text-gold font-bold text-sm">Pick Brush</h3>
+          <button
+            onClick={onClose}
+            className="text-white/40 hover:text-white text-base cursor-pointer transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Pieces grid */}
+        <div className="flex flex-col gap-2">
+          <span className="text-white/30 text-[9px] uppercase tracking-wide">Pieces</span>
+          <div className="grid grid-cols-3 gap-1.5">
+            {PIECE_INFO.slice(0, maxType).map((info, i) => {
+              const active = palette.kind === 'piece' && palette.type - 1 === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    onPaletteChange({ kind: 'piece', type: i + 1 });
+                    if (tool === 'remove') onToolChange('paint');
+                    onClose();
+                  }}
+                  className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 cursor-pointer transition-all border-2"
+                  style={{
+                    borderColor: active ? info.bg : 'transparent',
+                    backgroundColor: active ? info.bg + '25' : 'rgba(255,255,255,0.05)',
+                    boxShadow: active ? `0 0 12px ${info.bg}50` : 'none',
+                  }}
+                >
+                  <img src={info.img} alt={info.name} className="w-9 h-9 object-contain" />
+                  <span className="text-[9px] text-white/70 truncate w-full text-center">{info.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="h-px bg-white/10" />
+
+        {/* Specials grid */}
+        <div className="flex flex-col gap-2">
+          <span className="text-white/30 text-[9px] uppercase tracking-wide">Specials</span>
+          <div className="grid grid-cols-2 gap-1.5">
+            {SPECIAL_INFO.map((info, i) => {
+              const active = palette.kind === 'special' && palette.index === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    onPaletteChange({ kind: 'special', index: i });
+                    if (tool === 'remove') onToolChange('paint');
+                    onClose();
+                  }}
+                  className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 cursor-pointer transition-all border-2"
+                  style={{
+                    borderColor: active ? info.bg : 'transparent',
+                    backgroundColor: active ? info.bg + '25' : 'rgba(255,255,255,0.05)',
+                    boxShadow: active ? `0 0 12px ${info.bg}50` : 'none',
+                  }}
+                >
+                  <img src={info.img} alt={info.name} className="w-9 h-9 object-contain" />
+                  <span className="text-[9px] text-white/70 truncate w-full text-center">{info.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="mt-1 w-full bg-gold/15 hover:bg-gold/25 border border-gold/30 text-gold
+                     rounded-xl py-2 text-xs font-bold cursor-pointer transition-colors shrink-0"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}

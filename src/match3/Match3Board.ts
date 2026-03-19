@@ -157,6 +157,7 @@ export class Match3Board {
     if (oldPiece) this.disposePiece(oldPiece);
     match3SetPieceType(this.grid, position, pieceType);
     if (!pieceType) return;
+    this.match3.stats.registerSpawn(pieceType);
     const piece = this.createPiece(position, pieceType);
     await piece.animateSpawn();
   }
