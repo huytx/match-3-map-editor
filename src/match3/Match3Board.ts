@@ -67,6 +67,7 @@ export class Match3Board {
     const blocks = match3GetBlocks(config.mode);
 
     this.typesMap = {};
+    this.commonTypes = [];
 
     // Organise types and set up special handlers
     // Piece types will be defined according to their positions in the string array of blocks
@@ -81,6 +82,18 @@ export class Match3Board {
         this.commonTypes.push(type);
       }
       this.typesMap[type] = name;
+    }
+
+    // Expand commonTypes based on spawn weights so each piece is weighted in random selection
+    if (config.weights && config.weights.length > 0) {
+      const unexpanded = [...this.commonTypes];
+      this.commonTypes = [];
+      for (let i = 0; i < unexpanded.length; i++) {
+        const w = Math.max(0, Math.min(10, config.weights[i] ?? 1));
+        for (let j = 0; j < w; j++) {
+          this.commonTypes.push(unexpanded[i]);
+        }
+      }
     }
 
     // Create the initial grid state (use preset from level editor if provided)
@@ -261,5 +274,21 @@ export class Match3Board {
   /** Bring a piece in front of all others */
   public bringToFront(piece: Match3Piece) {
     this.piecesContainer.addChild(piece);
+  }
+
+  /** Pop all special pieces still on the board, triggering their chain effects */
+  public async popAllSpecials() {
+    const positions: Match3Position[] = [];
+    match3ForEach(this.grid, (pos: Match3Position, type: Match3Type) => {
+      if (this.match3.special.isSpecial(type)) {
+        positions.push({ row: pos.row, column: pos.column });
+      }
+    });
+    for (const pos of positions) {
+      const type = this.getTypeByPosition(pos);
+      if (type && this.match3.special.isSpecial(type)) {
+        await this.popPiece(pos);
+      }
+    }
   }
 }

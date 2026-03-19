@@ -12,11 +12,11 @@ export const PIECE_COUNT: Record<Match3Mode, number> = {
 
 export const PIECE_INFO = [
   { name: 'Dragon', bg: '#e8412b', img: '/assets/editor/piece-dragon.png' },
-  { name: 'Frog', bg: '#4abe50', img: '/assets/editor/piece-frog.png' },
-  { name: 'Newt', bg: '#4287f5', img: '/assets/editor/piece-newt.png' },
-  { name: 'Snake', bg: '#d4e84b', img: '/assets/editor/piece-snake.png' },
-  { name: 'Spider', bg: '#9b4be8', img: '/assets/editor/piece-spider.png' },
-  { name: 'Yeti', bg: '#a8e4f0', img: '/assets/editor/piece-yeti.png' },
+  { name: 'Frog', bg: '#2288ee', img: '/assets/editor/piece-frog.png' },
+  { name: 'Newt', bg: '#66cc22', img: '/assets/editor/piece-newt.png' },
+  { name: 'Snake', bg: '#9922cc', img: '/assets/editor/piece-snake.png' },
+  { name: 'Spider', bg: '#f0b210', img: '/assets/editor/piece-spider.png' },
+  { name: 'Yeti', bg: '#f070b5', img: '/assets/editor/piece-yeti.png' },
 ] as const;
 
 export const SPECIAL_INFO = [

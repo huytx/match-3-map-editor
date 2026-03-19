@@ -45,6 +45,8 @@ export interface Match3Config {
   goals?: Record<string, number>;
   /** Optional move limit. When set, the game also ends when the player exhausts all moves. */
   maxMoves?: number;
+  /** Per-piece spawn weight (index 0 = first common piece type, weight 1–5). Higher = more frequent. */
+  weights?: number[];
 }
 
 /** Default match3 configuration */

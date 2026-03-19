@@ -10,6 +10,8 @@ export interface EditorSnapshot {
   movesLimit: number;
   levelName: string;
   goals: Record<string, number>;
+  /** Per-piece spawn weights (index 0 = first common piece, weight 1–5) */
+  weights?: number[];
 }
 
 interface EditorModel {

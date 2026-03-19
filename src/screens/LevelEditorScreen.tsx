@@ -31,6 +31,7 @@ export const LevelEditorScreenView = () => {
   const initialMovesLimit = snapshot?.movesLimit ?? 0;
   const initialLevelName = snapshot?.levelName ?? '';
   const initialGoals = snapshot?.goals ?? {};
+  const initialWeights = snapshot?.weights;
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<Match3Mode>(initialMode);
@@ -38,6 +39,9 @@ export const LevelEditorScreenView = () => {
   const [movesLimit, setMovesLimit] = useState(initialMovesLimit);
   const [levelName, setLevelName] = useState(initialLevelName);
   const [goals, setGoals] = useState<Record<string, number>>(initialGoals);
+  const [weights, setWeights] = useState<number[]>(() =>
+    Array.from({ length: PIECE_COUNT[initialMode] }, (_, i) => initialWeights?.[i] ?? 1),
+  );
   const [palette, setPalette] = useState<PaletteEntry>({ kind: 'piece', type: 1 });
   const [tool, setTool] = useState<ToolMode>('paint');
   const [hovered, setHovered] = useState<[number, number] | null>(null);
@@ -97,6 +101,7 @@ export const LevelEditorScreenView = () => {
   useEffect(() => {
     push(adaptGrid(grid, PIECE_COUNT[mode]));
     if (palette.kind === 'piece' && palette.type > PIECE_COUNT[mode]) setPalette({ kind: 'piece', type: 1 });
+    setWeights((prev) => Array.from({ length: PIECE_COUNT[mode] }, (_, i) => prev[i] ?? 1));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
@@ -144,7 +149,7 @@ export const LevelEditorScreenView = () => {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handlePlay = () => {
-    saveSnapshot({ grid, mode, duration, movesLimit, levelName, goals });
+    saveSnapshot({ grid, mode, duration, movesLimit, levelName, goals, weights });
     setPendingLevel({
       rows: ROWS,
       columns: COLUMNS,
@@ -156,6 +161,7 @@ export const LevelEditorScreenView = () => {
       levelName: levelName || undefined,
       grid: resolveGrid(),
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
+      weights,
     });
     navigate('game');
   };
@@ -172,6 +178,7 @@ export const LevelEditorScreenView = () => {
       mode,
       grid: resolveGrid(),
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
+      weights,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -195,6 +202,11 @@ export const LevelEditorScreenView = () => {
         setMovesLimit(Math.max(0, Number(data.maxMoves) || 0));
         setLevelName(data.levelName ?? '');
         setGoals(typeof data.goals === 'object' && data.goals ? data.goals : {});
+        setWeights(
+          Array.isArray(data.weights)
+            ? Array.from({ length: PIECE_COUNT[m] }, (_, i) => data.weights[i] ?? 1)
+            : Array.from({ length: PIECE_COUNT[m] }, () => 1),
+        );
         push(Array.isArray(data.grid) ? adaptGrid(data.grid, PIECE_COUNT[m]) : makeEmptyGrid());
       } catch {
         /* ignore bad JSON */
@@ -231,6 +243,14 @@ export const LevelEditorScreenView = () => {
         onToolChange={setTool}
         maxType={maxType}
         distItems={distItems}
+        weights={weights}
+        onWeightChange={(i, w) =>
+          setWeights((prev) => {
+            const next = [...prev];
+            next[i] = w;
+            return next;
+          })
+        }
         goals={goals}
         onGoalCountChange={setGoalCount}
         activeGoals={activeGoals}

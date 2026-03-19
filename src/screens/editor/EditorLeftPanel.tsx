@@ -32,6 +32,8 @@ interface Props {
   onToolChange: (t: ToolMode) => void;
   maxType: number;
   distItems: Array<{ type: number; count: number; pct: number; info: (typeof PIECE_INFO)[number] }>;
+  weights: number[];
+  onWeightChange: (typeIndex: number, weight: number) => void;
   goals: Record<string, number>;
   onGoalCountChange: (name: string, count: number) => void;
   activeGoals: Record<string, number>;
@@ -61,6 +63,8 @@ export function EditorLeftPanel({
   onToolChange,
   maxType,
   distItems,
+  weights,
+  onWeightChange,
   goals,
   onGoalCountChange,
   activeGoals,
@@ -226,22 +230,79 @@ export function EditorLeftPanel({
 
         <div className="h-px bg-white/8 shrink-0" />
 
-        {/* Distribution */}
+        {/* Distribution + Weights */}
         <section className="flex flex-col gap-1.5">
-          <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Distribution</h2>
-          <div className="flex flex-col gap-1">
-            {distItems.map(({ type, pct, info }) => (
-              <div key={type} className="flex items-center gap-1.5">
-                <img src={info?.img} alt={info?.name} className="w-4 h-4 object-contain shrink-0" />
-                <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{ width: `${pct}%`, backgroundColor: info?.bg }}
-                  />
-                </div>
-                <span className="text-[9px] text-white/35 w-6 text-right tabular-nums shrink-0">{pct}%</span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Spawn Weights</h2>
+            <span className="text-white/20 text-[9px]">click to set 0–10</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {(() => {
+              const total = distItems.reduce((s, _, i) => s + (weights[i] ?? 1), 0);
+              return distItems.map(({ type, pct, info }, i) => {
+                const spawnPct = total > 0 ? Math.round(((weights[i] ?? 1) / total) * 100) : 0;
+                return (
+                  <div key={type} className="flex items-center gap-1.5">
+                    <img
+                      src={info?.img}
+                      alt={info?.name}
+                      className="w-4 h-4 object-contain shrink-0"
+                      title={info?.name}
+                    />
+                    {/* painted-pct bar */}
+                    <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{ width: `${pct}%`, backgroundColor: info?.bg }}
+                      />
+                    </div>
+                    {/* weight dot selector (1–10) + off toggle */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* off button */}
+                      <button
+                        title="Disabled (weight 0)"
+                        onClick={() => onWeightChange(i, 0)}
+                        className="text-[8px] px-1 py-0.5 rounded transition-all cursor-pointer font-bold leading-none"
+                        style={{
+                          background: (weights[i] ?? 1) === 0 ? 'rgba(255,80,80,0.25)' : 'rgba(255,255,255,0.07)',
+                          border: `1px solid ${(weights[i] ?? 1) === 0 ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                          color: (weights[i] ?? 1) === 0 ? '#ff5050' : 'rgba(255,255,255,0.25)',
+                        }}
+                      >
+                        off
+                      </button>
+                      {/* 10 dots for weight 1–10 */}
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 10 }, (_, d) => (
+                          <button
+                            key={d}
+                            title={`Weight ${d + 1}`}
+                            onClick={() => onWeightChange(i, d + 1)}
+                            className="w-2 h-2 rounded-full transition-all cursor-pointer hover:scale-125"
+                            style={{
+                              background:
+                                (weights[i] ?? 1) > 0 && d < (weights[i] ?? 1) ? info?.bg : 'rgba(255,255,255,0.12)',
+                              boxShadow:
+                                (weights[i] ?? 1) > 0 && d < (weights[i] ?? 1) ? `0 0 3px ${info?.bg}80` : 'none',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {/* spawn probability */}
+                    <span
+                      className="text-[9px] tabular-nums w-7 text-right shrink-0 font-semibold"
+                      style={{
+                        color:
+                          (weights[i] ?? 1) === 0 ? 'rgba(255,255,255,0.2)' : (info?.bg ?? 'rgba(255,255,255,0.35)'),
+                      }}
+                    >
+                      {(weights[i] ?? 1) === 0 ? 'off' : `${spawnPct}%`}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </section>
 

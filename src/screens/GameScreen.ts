@@ -266,6 +266,7 @@ export class GameScreen extends Container {
     if (this.finished) return;
     this.finished = true;
     this.match3.stopPlaying();
+    await this.match3.board.popAllSpecials();
     const performance = this.match3.stats.getGameplayPerformance();
     userStats.save(this.match3.config.mode, performance);
     await this.hide();

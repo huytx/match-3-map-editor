@@ -11,6 +11,9 @@ import {
   match3ShuffleGrid,
 } from './Match3Utility';
 
+const DEBUG = import.meta.env.VITE_DEBUG_MODE === 'true';
+const log = DEBUG ? console.log.bind(console) : () => {};
+
 /**
  * Sort out the gameplay progression on the board after a player action, clearing matches
  * then filling up empty spaces. The process is organised in 'process rounds' that will keep
@@ -67,7 +70,7 @@ export class Match3Process {
     this.processing = true;
     this.round = 0;
     this.match3.onProcessStart?.();
-    console.log('[Match3] ======= PROCESSING START ==========');
+    log('[Match3] ======= PROCESSING START ==========');
     this.runProcessRound();
   }
 
@@ -76,10 +79,10 @@ export class Match3Process {
     if (!this.processing) return;
     this.processing = false;
     this.queue.clear();
-    console.log('[Match3] Sequence rounds:', this.round);
-    console.log('[Match3] Board pieces:', this.match3.board.pieces.length);
-    console.log('[Match3] Grid:\n' + match3GridToString(this.match3.board.grid));
-    console.log('[Match3] ======= PROCESSING COMPLETE =======');
+    log('[Match3] Sequence rounds:', this.round);
+    log('[Match3] Board pieces:', this.match3.board.pieces.length);
+    log('[Match3] Grid:\n' + match3GridToString(this.match3.board.grid));
+    log('[Match3] ======= PROCESSING COMPLETE =======');
     this.match3.onProcessComplete?.();
   }
 
@@ -91,7 +94,7 @@ export class Match3Process {
     // Step #1 - Bump sequence number and update stats with new matches found
     this.queue.add(async () => {
       this.round += 1;
-      console.log(`[Match3] -- SEQUENCE ROUND #${this.round} START`);
+      log(`[Match3] -- SEQUENCE ROUND #${this.round} START`);
       this.updateStats();
     });
 
@@ -118,7 +121,7 @@ export class Match3Process {
 
     // Step #6 - Finish up this sequence round and check if it needs a re-run, otherwise stop processing
     this.queue.add(async () => {
-      console.log(`[Match3] -- SEQUENCE ROUND #${this.round} FINISH`);
+      log(`[Match3] -- SEQUENCE ROUND #${this.round} FINISH`);
       this.processCheckpoint();
     });
   }
@@ -127,7 +130,7 @@ export class Match3Process {
   private async updateStats() {
     const matches = match3GetMatches(this.match3.board.grid);
     if (!matches.length) return;
-    console.log('[Match3] Update stats');
+    log('[Match3] Update stats');
     const matchData = { matches, combo: this.getProcessRound() };
     this.match3.stats.registerMatch(matchData);
     this.match3.onMatch?.(matchData);
@@ -135,13 +138,13 @@ export class Match3Process {
 
   /** Sort out special matches in the grid */
   private async processSpecialMatches() {
-    console.log('[Match3] Process special matches');
+    log('[Match3] Process special matches');
     await this.match3.special.process();
   }
 
   /** Clear all matches in the grid */
   private async processRegularMatches() {
-    console.log('[Match3] Process regular matches');
+    log('[Match3] Process regular matches');
     const matches = match3GetMatches(this.match3.board.grid);
     const animPromises = [];
     for (const match of matches) {
@@ -153,7 +156,7 @@ export class Match3Process {
   /** Make existing pieces fall in the grid if there are empty spaces below them */
   private async applyGravity() {
     const changes = match3ApplyGravity(this.match3.board.grid);
-    console.log('[Match3] Apply gravity - moved pieces:', changes.length);
+    log('[Match3] Apply gravity - moved pieces:', changes.length);
     const animPromises = [];
 
     for (const change of changes) {
@@ -173,7 +176,7 @@ export class Match3Process {
   /** Fill up empty spaces in the grid with new pieces falling from the top */
   private async refillGrid() {
     const newPieces = match3FillUp(this.match3.board.grid, this.match3.board.commonTypes);
-    console.log('[Match3] Refill grid - new pieces:', newPieces.length);
+    log('[Match3] Refill grid - new pieces:', newPieces.length);
     const animPromises = [];
     const piecesPerColumn: Record<number, number> = {};
 
@@ -201,18 +204,18 @@ export class Match3Process {
     // Check if there are any remaining matches or empty spots
     const newMatches = match3GetMatches(this.match3.board.grid);
     const emptySpaces = match3GetEmptyPositions(this.match3.board.grid);
-    console.log('[Match3] Checkpoint - New matches:', newMatches.length);
-    console.log('[Match3] Checkpoint - Empty spaces:', emptySpaces.length);
+    log('[Match3] Checkpoint - New matches:', newMatches.length);
+    log('[Match3] Checkpoint - Empty spaces:', emptySpaces.length);
     if (newMatches.length || emptySpaces.length) {
-      console.log('[Match3] Checkpoint - Another sequence run is needed');
+      log('[Match3] Checkpoint - Another sequence run is needed');
       // Run it again if there are any new matches or empty spaces in the grid
       this.runProcessRound();
     } else if (!match3HasPossibleMoves(this.match3.board.grid, this.match3.board.commonTypes)) {
-      console.log('[Match3] Checkpoint - No valid moves left, shuffling board');
+      log('[Match3] Checkpoint - No valid moves left, shuffling board');
       await this.shuffleBoard();
       this.stop();
     } else {
-      console.log('[Match3] Checkpoint - Nothing left to do, all good');
+      log('[Match3] Checkpoint - Nothing left to do, all good');
       // Otherwise, finish the grid processing
       this.stop();
     }
