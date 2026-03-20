@@ -1,8 +1,9 @@
 import { PIECE_INFO, SPECIAL_INFO, COLUMNS, ROWS } from './constants';
-import { makeEmptyGrid, makeRandomGrid, makeDeadlockGrid } from './gridUtils';
+import { makeEmptyGrid, makeRandomGrid, makeDeadlockGrid, BLOCK_SENTINEL } from './gridUtils';
 
 function getCellStyle(type: number) {
   if (type === 0) return { bg: 'rgba(10,0,30,0.55)', border: 'rgba(255,255,255,0.06)', img: '' };
+  if (type === BLOCK_SENTINEL) return { bg: '#3a2e4a', border: '#7a6e8eaa', img: '' };
   if (type < 0) {
     const sp = SPECIAL_INFO[Math.abs(type) - 1];
     return { bg: 'rgba(10,0,30,0.7)', border: '#ffd579aa', img: sp?.img ?? '' };

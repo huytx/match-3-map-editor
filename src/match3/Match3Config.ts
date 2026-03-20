@@ -33,7 +33,7 @@ export interface Match3Config {
   tileSize: number;
   /** Validate all moves, regardless if they create a match or not */
   freeMoves: boolean;
-  /** Gameplay duration, in seconds */
+  /** Gameplay duration, in seconds. Set to 0 for timeless mode (only move count or goals matter) */
   duration: number;
   /** Gameplay mode - affects the number of piece types in the grid */
   mode: Match3Mode;
@@ -45,6 +45,8 @@ export interface Match3Config {
   goals?: Record<string, number>;
   /** Optional move limit. When set, the game also ends when the player exhausts all moves. */
   maxMoves?: number;
+  /** When true, game ends immediately if deadlock is detected. When false (default), board shuffles automatically. */
+  enableDeadlock?: boolean;
   /** Per-piece spawn weight (index 0 = first common piece type, weight 1–5). Higher = more frequent. */
   weights?: number[];
 }

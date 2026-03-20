@@ -72,6 +72,7 @@ export class GameScreen extends Container {
     this.match3.onPop = this.onPop.bind(this);
     this.match3.onProcessComplete = this.onProcessComplete.bind(this);
     this.match3.onTimesUp = this.onTimesUp.bind(this);
+    this.match3.onDeadlock = this.onDeadlock.bind(this);
     this.gameContainer.addChild(this.match3);
 
     this.comboMessage = new CloudLabel({ color: 0x2c136c, labelColor: 0xffffff });
@@ -137,6 +138,7 @@ export class GameScreen extends Container {
       goals: this.match3.config.goals ?? {},
       movesLeft: this.movesLeft,
       maxMoves: this.match3.config.maxMoves ?? 0,
+      isTimeless: this.match3.config.duration === 0,
     });
   }
 
@@ -235,19 +237,28 @@ export class GameScreen extends Container {
       this.finish();
       return;
     }
-    // Check if moves are exhausted
+    // Check if moves are exhausted (only if maxMoves is set and timeless mode is off)
     if (this.match3.config.maxMoves && this.movesLeft <= 0) {
       this.match3.stopPlaying();
       this.finish();
       return;
     }
-    // Only finishes the game if timer already ended
-    if (!this.match3.timer.isRunning()) this.finish();
+    // Only finishes the game if timer already ended (skip if timeless mode)
+    if (this.match3.config.duration > 0 && !this.match3.timer.isRunning()) {
+      this.finish();
+    }
   }
 
   /** Fires when the game timer ends */
   private onTimesUp() {
     this.pauseButton.hide();
+    this.match3.stopPlaying();
+    // Only finishes the game if match 3 is not auto-processing the grid
+    if (!this.match3.process.isProcessing()) this.finish();
+  }
+
+  /** Fires when deadlock is detected and enableDeadlock is true */
+  private onDeadlock() {
     this.match3.stopPlaying();
     // Only finishes the game if match 3 is not auto-processing the grid
     if (!this.match3.process.isProcessing()) this.finish();

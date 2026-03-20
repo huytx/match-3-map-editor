@@ -1,7 +1,10 @@
 import { ROWS, COLUMNS } from './constants';
+import { MATCH3_BLOCK_TYPE } from '@/match3/Match3Utility';
 
 // Special sentinels stored as negative numbers: -(specialIndex+1)
 export const specialSentinel = (i: number) => -(i + 1);
+/** Sentinel value used in the editor grid for indestructible block tiles */
+export const BLOCK_SENTINEL = -5;
 
 export function makeEmptyGrid(): number[][] {
   return Array.from({ length: ROWS }, () => Array.from({ length: COLUMNS }, () => 0));
@@ -41,6 +44,7 @@ export function adaptGrid(prev: number[][], maxType: number): number[][] {
     Array.from({ length: COLUMNS }, (_, c) => {
       const v = prev[r]?.[c];
       if (v === undefined || v === 0) return 0;
+      if (v === MATCH3_BLOCK_TYPE) return BLOCK_SENTINEL; // convert game type back to editor sentinel
       if (v < 0) return v; // keep special sentinel
       if (v >= 1 && v <= maxType) return v;
       return 0; // out-of-range piece → clear

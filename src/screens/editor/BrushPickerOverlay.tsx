@@ -1,4 +1,4 @@
-import { PIECE_INFO, SPECIAL_INFO } from './constants';
+import { PIECE_INFO, SPECIAL_INFO, BLOCK_INFO } from './constants';
 import type { PaletteEntry, ToolMode } from './constants';
 
 interface Props {
@@ -91,6 +91,39 @@ export function BrushPickerOverlay({ onClose, palette, onPaletteChange, tool, on
               );
             })}
           </div>
+        </div>
+
+        <div className="h-px bg-white/10" />
+
+        {/* Block */}
+        <div className="flex flex-col gap-2">
+          <span className="text-white/30 text-[9px] uppercase tracking-wide">Obstacle</span>
+          {(() => {
+            const active = palette.kind === 'block';
+            return (
+              <button
+                onClick={() => {
+                  onPaletteChange({ kind: 'block' });
+                  if (tool === 'remove') onToolChange('paint');
+                  onClose();
+                }}
+                className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 cursor-pointer transition-all border-2 w-full"
+                style={{
+                  borderColor: active ? BLOCK_INFO.bg : 'transparent',
+                  backgroundColor: active ? BLOCK_INFO.bg + '25' : 'rgba(255,255,255,0.05)',
+                  boxShadow: active ? `0 0 12px ${BLOCK_INFO.bg}50` : 'none',
+                }}
+              >
+                <div
+                  className="w-9 h-9 rounded-md flex items-center justify-center text-white/60 text-lg font-bold"
+                  style={{ backgroundColor: BLOCK_INFO.bg + '50' }}
+                >
+                  ▪
+                </div>
+                <span className="text-[9px] text-white/70">{BLOCK_INFO.name}</span>
+              </button>
+            );
+          })()}
         </div>
 
         <button

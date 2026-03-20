@@ -211,9 +211,17 @@ export class Match3Process {
       // Run it again if there are any new matches or empty spaces in the grid
       this.runProcessRound();
     } else if (!match3HasPossibleMoves(this.match3.board.grid, this.match3.board.commonTypes)) {
-      log('[Match3] Checkpoint - No valid moves left, shuffling board');
-      await this.shuffleBoard();
-      this.stop();
+      log('[Match3] Checkpoint - No valid moves left');
+      // If deadlock is enabled, emit event to end game
+      if (this.match3.config.enableDeadlock) {
+        log('[Match3] Checkpoint - Deadlock enabled, ending game');
+        this.match3.onDeadlock?.();
+        this.stop();
+      } else {
+        log('[Match3] Checkpoint - Deadlock disabled, shuffling board');
+        await this.shuffleBoard();
+        this.stop();
+      }
     } else {
       log('[Match3] Checkpoint - Nothing left to do, all good');
       // Otherwise, finish the grid processing

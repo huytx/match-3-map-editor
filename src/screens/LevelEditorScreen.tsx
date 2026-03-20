@@ -7,7 +7,8 @@ import type { GameModel, EditorSnapshot } from '@/store/game-store';
 
 import { ROWS, COLUMNS, PIECE_COUNT, PIECE_INFO } from './editor/constants';
 import type { PaletteEntry, ToolMode } from './editor/constants';
-import { makeEmptyGrid, adaptGrid, specialSentinel, floodFill } from './editor/gridUtils';
+import { makeEmptyGrid, adaptGrid, specialSentinel, floodFill, BLOCK_SENTINEL } from './editor/gridUtils';
+import { MATCH3_BLOCK_TYPE } from '@/match3/Match3Utility';
 import { useHistory } from './editor/useHistory';
 import { EditorLeftPanel } from './editor/EditorLeftPanel';
 import { EditorGrid } from './editor/EditorGrid';
@@ -32,13 +33,14 @@ export const LevelEditorScreenView = () => {
   const initialLevelName = snapshot?.levelName ?? '';
   const initialGoals = snapshot?.goals ?? {};
   const initialWeights = snapshot?.weights;
-
+  const initialEnableDeadlock = snapshot?.enableDeadlock ?? false;
   // ── State ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<Match3Mode>(initialMode);
   const [duration, setDuration] = useState(initialDuration);
   const [movesLimit, setMovesLimit] = useState(initialMovesLimit);
   const [levelName, setLevelName] = useState(initialLevelName);
   const [goals, setGoals] = useState<Record<string, number>>(initialGoals);
+  const [enableDeadlock, setEnableDeadlock] = useState(initialEnableDeadlock);
   const [weights, setWeights] = useState<number[]>(() =>
     Array.from({ length: PIECE_COUNT[initialMode] }, (_, i) => initialWeights?.[i] ?? 1),
   );
@@ -110,6 +112,7 @@ export const LevelEditorScreenView = () => {
     if (tool === 'remove') return 0;
     if (palette.kind === 'piece') return palette.type;
     if (palette.kind === 'special') return specialSentinel(palette.index);
+    if (palette.kind === 'block') return BLOCK_SENTINEL;
     return 0;
   }, [palette, tool]);
 
@@ -144,12 +147,18 @@ export const LevelEditorScreenView = () => {
 
   // ── Resolve grid (specials → actual type offsets) ─────────────────────────
   const resolveGrid = useCallback((): number[][] => {
-    return grid.map((row) => row.map((v) => (v < 0 ? maxType + Math.abs(v) : v)));
+    return grid.map((row) =>
+      row.map((v) => {
+        if (v === BLOCK_SENTINEL) return MATCH3_BLOCK_TYPE;
+        if (v < 0) return maxType + Math.abs(v);
+        return v;
+      }),
+    );
   }, [grid, maxType]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handlePlay = () => {
-    saveSnapshot({ grid, mode, duration, movesLimit, levelName, goals, weights });
+    saveSnapshot({ grid, mode, duration, movesLimit, levelName, goals, weights, enableDeadlock });
     setPendingLevel({
       rows: ROWS,
       columns: COLUMNS,
@@ -162,6 +171,7 @@ export const LevelEditorScreenView = () => {
       grid: resolveGrid(),
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
+      enableDeadlock,
     });
     navigate('game');
   };
@@ -179,6 +189,7 @@ export const LevelEditorScreenView = () => {
       grid: resolveGrid(),
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
+      enableDeadlock,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -198,10 +209,11 @@ export const LevelEditorScreenView = () => {
         const data = JSON.parse(ev.target?.result as string);
         const m: Match3Mode = match3ValidModes.includes(data.mode) ? data.mode : 'normal';
         setMode(m);
-        setDuration(Math.max(30, Math.min(300, Number(data.duration) || 60)));
+        setDuration(Math.max(0, Math.min(300, Number(data.duration) || 60)));
         setMovesLimit(Math.max(0, Number(data.maxMoves) || 0));
         setLevelName(data.levelName ?? '');
         setGoals(typeof data.goals === 'object' && data.goals ? data.goals : {});
+        setEnableDeadlock(data.enableDeadlock === true);
         setWeights(
           Array.isArray(data.weights)
             ? Array.from({ length: PIECE_COUNT[m] }, (_, i) => data.weights[i] ?? 1)
@@ -237,6 +249,8 @@ export const LevelEditorScreenView = () => {
         onMovesLimitChange={setMovesLimit}
         levelName={levelName}
         onLevelNameChange={setLevelName}
+        enableDeadlock={enableDeadlock}
+        onEnableDeadlockChange={setEnableDeadlock}
         palette={palette}
         onPaletteChange={setPalette}
         tool={tool}

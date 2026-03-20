@@ -26,5 +26,7 @@ export const SPECIAL_INFO = [
   { name: 'Colour', key: 'special-colour', bg: '#ffd579', img: '/assets/editor/special-colour.png' },
 ] as const;
 
-export type PaletteEntry = { kind: 'piece'; type: number } | { kind: 'special'; index: number };
+export const BLOCK_INFO = { name: 'Block', bg: '#7a6e8e', img: '' } as const;
+
+export type PaletteEntry = { kind: 'piece'; type: number } | { kind: 'special'; index: number } | { kind: 'block' };
 export type ToolMode = 'paint' | 'fill' | 'remove';

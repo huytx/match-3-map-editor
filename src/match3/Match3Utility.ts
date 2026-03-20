@@ -1,6 +1,9 @@
 /** Piece type on each position in the grid */
 export type Match3Type = number;
 
+/** Fixed type value reserved for immovable, indestructible block tiles */
+export const MATCH3_BLOCK_TYPE = 999;
+
 /** Two-dimensional array represeinting the game board */
 export type Match3Grid = Match3Type[][];
 
@@ -185,6 +188,14 @@ function match3GetMatchesByOrientation(grid: Match3Grid, matchSize: number, orie
       const column = orientation === 'horizontal' ? s : p;
       const type = grid[row][column];
 
+      // Block tiles act as walls — reset match chain without being matched
+      if (type === MATCH3_BLOCK_TYPE) {
+        if (currentMatch.length >= matchSize) matches.push(currentMatch);
+        currentMatch = [];
+        lastType = undefined;
+        continue;
+      }
+
       if (type && type === lastType) {
         // Type is the same as the last type, append to the match list
         currentMatch.push({ row, column });
@@ -294,6 +305,9 @@ export function match3ApplyGravity(grid: Match3Grid) {
       let position = { row: r, column: c };
       const belowPosition = { row: r + 1, column: c };
       let hasChanged = false;
+
+      // Block tiles never fall
+      if (match3GetPieceType(grid, position) === MATCH3_BLOCK_TYPE) continue;
 
       // Skip this one if position below is out of bounds
       if (!match3IsValidPosition(grid, belowPosition)) continue;

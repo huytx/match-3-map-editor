@@ -10,6 +10,8 @@ export interface EditorSnapshot {
   movesLimit: number;
   levelName: string;
   goals: Record<string, number>;
+  /** Enable deadlock - when true, game ends immediately on deadlock */
+  enableDeadlock?: boolean;
   /** Per-piece spawn weights (index 0 = first common piece, weight 1–5) */
   weights?: number[];
 }

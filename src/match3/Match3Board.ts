@@ -11,6 +11,7 @@ import {
   match3ForEach,
   Match3Grid,
   Match3Type,
+  MATCH3_BLOCK_TYPE,
 } from './Match3Utility';
 
 /**
@@ -84,6 +85,9 @@ export class Match3Board {
       this.typesMap[type] = name;
     }
 
+    // Register the permanent block type (fixed sentinel, not part of mode's block list)
+    this.typesMap[MATCH3_BLOCK_TYPE] = 'block';
+
     // Expand commonTypes based on spawn weights so each piece is weighted in random selection
     if (config.weights && config.weights.length > 0) {
       const unexpanded = [...this.commonTypes];
@@ -134,9 +138,10 @@ export class Match3Board {
       name,
       type: pieceType,
       size: this.match3.config.tileSize,
-      interactive: true,
+      interactive: pieceType !== MATCH3_BLOCK_TYPE,
       highlight: this.match3.special.isSpecial(pieceType),
     });
+    if (pieceType === MATCH3_BLOCK_TYPE) piece.lock();
     piece.row = position.row;
     piece.column = position.column;
     piece.x = viewPosition.x;
@@ -184,6 +189,8 @@ export class Match3Board {
     const piece = this.getPieceByPosition(position);
     const type = match3GetPieceType(this.grid, position);
     if (!type || !piece) return;
+    // Block tiles are indestructible
+    if (type === MATCH3_BLOCK_TYPE) return;
     const isSpecial = this.match3.special.isSpecial(type);
     const combo = this.match3.process.getProcessRound();
 

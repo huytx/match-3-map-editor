@@ -27,6 +27,7 @@ export const GameScreenUIView = () => {
     goals: {} as Record<string, number>,
     movesLeft: 0,
     maxMoves: 0,
+    isTimeless: false,
   });
   const [editorPreview] = useState(() => isEditorPreview());
 
@@ -39,6 +40,7 @@ export const GameScreenUIView = () => {
       goals: Record<string, number>;
       movesLeft: number;
       maxMoves: number;
+      isTimeless: boolean;
     }) => setHud(data);
     eventEmitter.on('hud:update', handler);
     return () => {
@@ -46,9 +48,10 @@ export const GameScreenUIView = () => {
     };
   }, []);
 
-  const { timeRemaining, score, clearedByName, goals, movesLeft, maxMoves } = hud;
+  const { timeRemaining, score, clearedByName, goals, movesLeft, maxMoves, isTimeless } = hud;
   const hasGoals = Object.keys(goals).length > 0;
   const hasMoves = maxMoves > 0;
+  const hasTimer = !isTimeless || timeRemaining > 0;
   const minutes = Math.floor(timeRemaining / 60000);
   const seconds = Math.floor(timeRemaining / 1000) % 60;
   const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -93,11 +96,13 @@ export const GameScreenUIView = () => {
               <span className="text-[9px] text-white/40 uppercase tracking-wide">moves</span>
             </div>
           )}
-          <div
-            className={`text-[26px] font-bold text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.6)] transition-colors duration-100${isLow ? ' timer-flash' : ''}`}
-          >
-            {timeStr}
-          </div>
+          {hasTimer && (
+            <div
+              className={`text-[26px] font-bold text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.6)] transition-colors duration-100${isLow ? ' timer-flash' : ''}`}
+            >
+              {timeStr}
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { match3ValidModes } from '@/match3/Match3Config';
 import type { Match3Mode } from '@/match3/Match3Config';
-import { PIECE_COUNT, PIECE_INFO, SPECIAL_INFO } from './constants';
+import { PIECE_COUNT, PIECE_INFO, SPECIAL_INFO, BLOCK_INFO } from './constants';
 import type { PaletteEntry, ToolMode } from './constants';
 import { BrushPickerOverlay } from './BrushPickerOverlay';
 import { GoalsOverlay } from './GoalsOverlay';
@@ -24,6 +24,8 @@ interface Props {
   onDurationChange: (d: number) => void;
   movesLimit: number;
   onMovesLimitChange: (m: number) => void;
+  enableDeadlock: boolean;
+  onEnableDeadlockChange: (e: boolean) => void;
   levelName: string;
   onLevelNameChange: (l: string) => void;
   palette: PaletteEntry;
@@ -55,6 +57,8 @@ export function EditorLeftPanel({
   onDurationChange,
   movesLimit,
   onMovesLimitChange,
+  enableDeadlock,
+  onEnableDeadlockChange,
   levelName,
   onLevelNameChange,
   palette,
@@ -76,8 +80,13 @@ export function EditorLeftPanel({
   const [brushOverlayOpen, setBrushOverlayOpen] = useState(false);
   const [goalsOverlayOpen, setGoalsOverlayOpen] = useState(false);
 
-  const brushInfo = palette.kind === 'piece' ? PIECE_INFO[palette.type - 1] : SPECIAL_INFO[palette.index];
-  const brushKindLabel = palette.kind === 'piece' ? 'Piece' : 'Special';
+  const brushInfo =
+    palette.kind === 'piece'
+      ? PIECE_INFO[palette.type - 1]
+      : palette.kind === 'block'
+        ? BLOCK_INFO
+        : SPECIAL_INFO[palette.index];
+  const brushKindLabel = palette.kind === 'piece' ? 'Piece' : palette.kind === 'block' ? 'Block' : 'Special';
 
   return (
     <div className="w-80 shrink-0 flex flex-col h-full border-r border-white/10 bg-black/25 overflow-y-auto relative">
@@ -140,12 +149,13 @@ export function EditorLeftPanel({
               <span className="text-white/30 text-[9px] uppercase tracking-wide">Time (s)</span>
               <input
                 type="number"
-                min={30}
+                min={0}
                 max={300}
                 step={10}
                 value={duration}
-                onChange={(e) => onDurationChange(Math.max(30, Math.min(300, Number(e.target.value))))}
+                onChange={(e) => onDurationChange(Math.max(0, Math.min(300, Number(e.target.value))))}
                 className="w-14 bg-white/5 border border-white/15 text-white text-xs text-center rounded-lg px-1.5 py-1.5 outline-none tabular-nums"
+                title="0 = timeless mode"
               />
             </div>
             <div className="flex flex-col gap-0.5">
@@ -163,6 +173,22 @@ export function EditorLeftPanel({
                 style={{ borderColor: movesLimit > 0 ? '#ff923560' : undefined }}
               />
             </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-white/15 px-2.5 py-1.5">
+            <input
+              type="checkbox"
+              id="deadlock-toggle"
+              checked={enableDeadlock}
+              onChange={(e) => onEnableDeadlockChange(e.target.checked)}
+              className="cursor-pointer"
+            />
+            <label
+              htmlFor="deadlock-toggle"
+              className="text-[9px] uppercase tracking-wide text-white/70 cursor-pointer flex-1"
+            >
+              End on Deadlock
+            </label>
+            <span className="text-[9px] text-white/40">{enableDeadlock ? '⚠️' : '🔄'}</span>
           </div>
         </section>
 
