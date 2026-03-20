@@ -8,9 +8,24 @@ export function makeEmptyGrid(): number[][] {
 }
 
 export function makeRandomGrid(maxType: number): number[][] {
-  return Array.from({ length: ROWS }, () =>
-    Array.from({ length: COLUMNS }, () => Math.floor(Math.random() * maxType) + 1),
-  );
+  const grid: number[][] = [];
+  for (let r = 0; r < ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < COLUMNS; c++) {
+      const forbidden = new Set<number>();
+      // Forbid types that would form 3-in-a-row horizontally
+      if (c >= 2 && grid[r][c - 1] === grid[r][c - 2]) forbidden.add(grid[r][c - 1]);
+      // Forbid types that would form 3-in-a-row vertically
+      if (r >= 2 && grid[r - 1][c] === grid[r - 2][c]) forbidden.add(grid[r - 1][c]);
+
+      const allowed: number[] = [];
+      for (let t = 1; t <= maxType; t++) {
+        if (!forbidden.has(t)) allowed.push(t);
+      }
+      grid[r][c] = allowed[Math.floor(Math.random() * allowed.length)];
+    }
+  }
+  return grid;
 }
 
 /**
