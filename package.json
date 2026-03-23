@@ -6,6 +6,8 @@
   "scripts": {
     "prestart": "run-s assets",
     "start": "vite --open",
+    "dev:game": "pnpm --filter @puzzling-potions/game dev",
+    "dev:editor": "pnpm --filter @puzzling-potions/level-editor dev",
     "assets": "assetpack",
     "prebuild": "run-s clean format:check lint assets types",
     "build": "vite build",

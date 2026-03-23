@@ -1,0 +1,108 @@
+{
+  "bundles": [
+    {
+      "name": "default",
+      "assets": []
+    },
+    {
+      "name": "common",
+      "assets": [
+        {
+          "alias": [
+            "common/common-atlas",
+            "common-atlas"
+          ],
+          "src": [
+            "common/common-atlas-ziYsZw.png.json",
+            "common/common-atlas-VX1clA@0.5x.webp.json",
+            "common/common-atlas-M_q2zA.webp.json",
+            "common/common-atlas-FQ2k3w@0.5x.png.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true,
+              "tps": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "game",
+      "assets": [
+        {
+          "alias": [
+            "game/game-atlas",
+            "game-atlas"
+          ],
+          "src": [
+            "game/game-atlas-zwYqnQ@0.5x.png.json",
+            "game/game-atlas-usG6iQ.png.json",
+            "game/game-atlas-icCVCQ.webp.json",
+            "game/game-atlas-5Lknhg@0.5x.webp.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true,
+              "tps": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "preload",
+      "assets": [
+        {
+          "alias": [
+            "preload/cauldron-skeleton.atlas",
+            "cauldron-skeleton.atlas"
+          ],
+          "src": [
+            "preload/cauldron-skeleton-x9cBkA@0.5x.webp.atlas",
+            "preload/cauldron-skeleton-SO49rg.webp.atlas",
+            "preload/cauldron-skeleton-rEWrEg@0.5x.png.atlas",
+            "preload/cauldron-skeleton-nXPppw.png.atlas"
+          ],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "preload/cauldron-skeleton.json",
+            "cauldron-skeleton.json"
+          ],
+          "src": [
+            "preload/cauldron-skeleton-pLdtSg.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "preload/preload-atlas",
+            "preload-atlas"
+          ],
+          "src": [
+            "preload/preload-atlas-M1EnYQ@0.5x.png.json",
+            "preload/preload-atlas-igEF7w.webp.json",
+            "preload/preload-atlas-87QoHA@0.5x.webp.json",
+            "preload/preload-atlas-66i4.png.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true,
+              "tps": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
