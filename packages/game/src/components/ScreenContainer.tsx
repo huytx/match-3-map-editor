@@ -5,14 +5,14 @@ import { ResultScreenView } from '@/screens/ResultScreen';
 import { JSX } from 'react';
 
 const SCREENS: Record<NonNullable<ScreenName>, () => JSX.Element> = {
-    home: HomeScreenView,
-    game: GameScreenUIView,
-    result: ResultScreenView,
+  home: HomeScreenView,
+  game: GameScreenUIView,
+  result: ResultScreenView,
 };
 
 export const ScreenContainer = () => {
-    const { currentScreen } = useNavigation();
-    if (!currentScreen) return null;
-    const Component = SCREENS[currentScreen];
-    return <Component />;
+  const { currentScreen } = useNavigation();
+  if (!currentScreen) return null;
+  const Component = SCREENS[currentScreen];
+  return <Component />;
 };

@@ -1,30 +1,30 @@
 // From a very good answer about pseudo random numbers on stack overflow
 // https://stackoverflow.com/a/47593316
 function xmur3(str: string): () => number {
-    let h = 1779033703 ^ str.length;
+  let h = 1779033703 ^ str.length;
 
-    for (let i = 0; i < str.length; i++) {
-        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-        h = (h << 13) | (h >>> 19);
-    }
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
 
-    return (): number => {
-        h = Math.imul(h ^ (h >>> 16), 2246822507);
-        h = Math.imul(h ^ (h >>> 13), 3266489909);
+  return (): number => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
 
-        return (h ^= h >>> 16) >>> 0;
-    };
+    return (h ^= h >>> 16) >>> 0;
+  };
 }
 
 function mulberry32(a: number): () => number {
-    return (): number => {
-        let t = (a += 0x6d2b79f5);
+  return (): number => {
+    let t = (a += 0x6d2b79f5);
 
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
 
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 const HASH_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -35,7 +35,7 @@ const HASH_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345
  * @returns Function that can be used instead Math.random
  */
 export function randomSeeded(seed: string): () => number {
-    return mulberry32(xmur3(seed)());
+  return mulberry32(xmur3(seed)());
 }
 
 /**
@@ -43,10 +43,10 @@ export function randomSeeded(seed: string): () => number {
  * @param random - The random function to be used (defaults to Math.random)
  */
 export function randomColor(random = Math.random): number {
-    const r = Math.floor(0xff * random());
-    const g = Math.floor(0xff * random());
-    const b = Math.floor(0xff * random());
-    return (r << 16) | (g << 8) | b;
+  const r = Math.floor(0xff * random());
+  const g = Math.floor(0xff * random());
+  const b = Math.floor(0xff * random());
+  return (r << 16) | (g << 8) | b;
 }
 
 /**
@@ -56,12 +56,12 @@ export function randomColor(random = Math.random): number {
  * @param random - The random function to be used (defaults to Math.random)
  */
 export function randomRange(min: number, max: number, random = Math.random): number {
-    const a = Math.min(min, max);
-    const b = Math.max(min, max);
+  const a = Math.min(min, max);
+  const b = Math.max(min, max);
 
-    const v = a + (b - a) * random();
+  const v = a + (b - a) * random();
 
-    return v;
+  return v;
 }
 
 /**
@@ -70,13 +70,13 @@ export function randomRange(min: number, max: number, random = Math.random): num
  * @param random - The random function to be used (defaults to Math.random)
  */
 export function randomItem<T>(obj: T, random = Math.random): T[keyof T] {
-    if (Array.isArray(obj)) {
-        return obj[Math.floor(random() * obj.length)];
-    }
+  if (Array.isArray(obj)) {
+    return obj[Math.floor(random() * obj.length)];
+  }
 
-    const keys = Object.keys(obj as Record<string, unknown>);
-    const key = keys[Math.floor(random() * keys.length)];
-    return obj[key as keyof T];
+  const keys = Object.keys(obj as Record<string, unknown>);
+  const key = keys[Math.floor(random() * keys.length)];
+  return obj[key as keyof T];
 }
 
 /**
@@ -86,7 +86,7 @@ export function randomItem<T>(obj: T, random = Math.random): T[keyof T] {
  * @returns
  */
 export function randomBool(weight = 0.5, random = Math.random): boolean {
-    return random() < weight;
+  return random() < weight;
 }
 
 /**
@@ -96,19 +96,19 @@ export function randomBool(weight = 0.5, random = Math.random): boolean {
  * @returns
  */
 export function randomShuffle<T>(array: T[], random = Math.random): T[] {
-    let currentIndex = array.length;
-    let temporaryValue;
-    let randomIndex;
+  let currentIndex = array.length;
+  let temporaryValue;
+  let randomIndex;
 
-    while (currentIndex !== 0) {
-        randomIndex = Math.floor(random() * currentIndex);
-        currentIndex -= 1;
-        temporaryValue = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temporaryValue;
-    }
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(random() * currentIndex);
+    currentIndex -= 1;
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
 
-    return array;
+  return array;
 }
 
 /**
@@ -118,12 +118,12 @@ export function randomShuffle<T>(array: T[], random = Math.random): T[] {
  * @returns
  */
 export function randomHash(length: number, random = Math.random, charset = HASH_CHARSET): string {
-    const charsetLength = charset.length;
-    let result = '';
+  const charsetLength = charset.length;
+  let result = '';
 
-    for (let i = 0; i < length; i++) {
-        result += charset.charAt(Math.floor(random() * charsetLength));
-    }
+  for (let i = 0; i < length; i++) {
+    result += charset.charAt(Math.floor(random() * charsetLength));
+  }
 
-    return result;
+  return result;
 }

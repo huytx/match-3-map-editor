@@ -14,10 +14,10 @@ let customEaseUID = 1;
  * @returns The ease function to be used in tweens
  */
 export function registerCustomEase(curve: string, name?: string) {
-    if (!name) name = 'customEase' + customEaseUID++;
-    const existing = CustomEase.get(name);
-    if (existing) return existing;
-    return CustomEase.create(name, curve);
+  if (!name) name = 'customEase' + customEaseUID++;
+  const existing = CustomEase.get(name);
+  if (existing) return existing;
+  return CustomEase.create(name, curve);
 }
 
 /**
@@ -26,12 +26,12 @@ export function registerCustomEase(curve: string, name?: string) {
  * @param targets The tween targets that must have related tweens killed
  */
 export async function resolveAndKillTweens(targets: gsap.TweenTarget) {
-    const tweens = gsap.getTweensOf(targets);
-    for (const tween of tweens) {
-        // Force resolve tween promise, if exists
-        if ((tween as any)['_prom']) (tween as any)['_prom']();
-    }
-    gsap.killTweensOf(targets);
+  const tweens = gsap.getTweensOf(targets);
+  for (const tween of tweens) {
+    // Force resolve tween promise, if exists
+    if ((tween as any)['_prom']) (tween as any)['_prom']();
+  }
+  gsap.killTweensOf(targets);
 }
 
 /**
@@ -39,8 +39,8 @@ export async function resolveAndKillTweens(targets: gsap.TweenTarget) {
  * @param targets Targets with tweens that should be paused
  */
 export function pauseTweens(targets: gsap.TweenTarget) {
-    const tweens = gsap.getTweensOf(targets);
-    for (const tween of tweens) tween.pause();
+  const tweens = gsap.getTweensOf(targets);
+  for (const tween of tweens) tween.pause();
 }
 
 /**
@@ -48,8 +48,8 @@ export function pauseTweens(targets: gsap.TweenTarget) {
  * @param targets Targets with tweens that should be resumed
  */
 export function resumeTweens(targets: gsap.TweenTarget) {
-    const tweens = gsap.getTweensOf(targets);
-    for (const tween of tweens) tween.resume();
+  const tweens = gsap.getTweensOf(targets);
+  for (const tween of tweens) tween.resume();
 }
 
 /**
@@ -59,15 +59,15 @@ export function resumeTweens(targets: gsap.TweenTarget) {
  * @param duration For how long it will be shaking
  */
 export async function earthquake(target: { x: number; y: number }, power = 8, duration = 0.5) {
-    const shake = { power };
-    await gsap.to(shake, {
-        power: 0,
-        duration,
-        ease: 'linear',
-        onUpdate: () => {
-            if (!target) return;
-            target.x = randomRange(-shake.power, shake.power);
-            target.y = randomRange(-shake.power, shake.power);
-        },
-    });
+  const shake = { power };
+  await gsap.to(shake, {
+    power: 0,
+    duration,
+    ease: 'linear',
+    onUpdate: () => {
+      if (!target) return;
+      target.x = randomRange(-shake.power, shake.power);
+      target.y = randomRange(-shake.power, shake.power);
+    },
+  });
 }
