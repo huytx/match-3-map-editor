@@ -184,8 +184,9 @@ export class Match3Board {
    * Pop a piece out of the board, triggering its effects if it is a special piece
    * @param position The grid position of the piece to be popped out
    * @param causedBySpecial If the pop was caused by special effect
+   * @param swappedType The type of the piece this special was swapped with, if triggered by a swap
    */
-  public async popPiece(position: Match3Position, causedBySpecial = false) {
+  public async popPiece(position: Match3Position, causedBySpecial = false, swappedType?: Match3Type) {
     const piece = this.getPieceByPosition(position);
     const type = match3GetPieceType(this.grid, position);
     if (!type || !piece) return;
@@ -206,7 +207,7 @@ export class Match3Board {
     this.disposePiece(piece);
 
     // Trigger any specials related to this piece, if there is any
-    await this.match3.special.trigger(type, position);
+    await this.match3.special.trigger(type, position, swappedType);
   }
 
   /**

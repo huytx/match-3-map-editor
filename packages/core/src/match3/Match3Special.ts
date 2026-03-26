@@ -14,7 +14,7 @@ export interface Match3SpecialHandler {
   /** Find out match patters and spawn special pieces  */
   process(matches: Match3Position[][]): Promise<void>;
   /** Trigger the special effect in position  */
-  trigger(pieceType: Match3Type, position: Match3Position): Promise<void>;
+  trigger(pieceType: Match3Type, position: Match3Position, swappedType?: Match3Type): Promise<void>;
 }
 
 /** Special handler constructor interface */
@@ -88,12 +88,13 @@ export class Match3Special {
    * Trigger a special in a grid position
    * @param pieceType The type of the special to be triggered
    * @param position The position in the grid
+   * @param swappedType The type of the piece this special was swapped with, if triggered by a swap
    * @returns
    */
-  public async trigger(pieceType: Match3Type, position: Match3Position) {
+  public async trigger(pieceType: Match3Type, position: Match3Position, swappedType?: Match3Type) {
     if (!this.isSpecial(pieceType)) return;
     for (const special of this.specialHandlers) {
-      await special.trigger(pieceType, position);
+      await special.trigger(pieceType, position, swappedType);
     }
   }
 

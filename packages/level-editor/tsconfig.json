@@ -5,9 +5,11 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@shared/*": ["../shared/src/*"],
+      "@puzzling-potions/core": ["../core/src/index.ts"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "../shared/src"],
   "references": [{ "path": "../core" }]
 }

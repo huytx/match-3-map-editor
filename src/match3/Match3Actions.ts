@@ -104,6 +104,10 @@ export class Match3Actions {
     const positionB = pieceB.getGridPosition();
     log('[Match3] Swap', positionA, positionB);
 
+    // Capture types before the swap so we know what was swapped with what
+    const typeA = match3GetPieceType(this.match3.board.grid, positionA);
+    const typeB = match3GetPieceType(this.match3.board.grid, positionB);
+
     // Find out view positions based on grid positions
     const viewPositionA = this.match3.board.getViewPositionByGridPosition(positionA);
     const viewPositionB = this.match3.board.getViewPositionByGridPosition(positionB);
@@ -144,11 +148,11 @@ export class Match3Actions {
         pieceB.animateSwap(viewPositionB.x, viewPositionB.y),
       ]);
     } else if (this.match3.special.isSpecial(match3GetPieceType(this.match3.board.grid, positionA))) {
-      // Pop piece A if is special
-      await this.match3.board.popPiece(positionA);
+      // After swap, positionA holds typeB (the special). The partner piece had typeA.
+      await this.match3.board.popPiece(positionA, false, typeA);
     } else if (this.match3.special.isSpecial(match3GetPieceType(this.match3.board.grid, positionB))) {
-      // Pop piece B if is special
-      await this.match3.board.popPiece(positionB);
+      // After swap, positionB holds typeA (the special). The partner piece had typeB.
+      await this.match3.board.popPiece(positionB, false, typeB);
     }
   }
 }

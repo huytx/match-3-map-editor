@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useStoreActions, useStoreState } from 'easy-peasy';
 import { useNavigation } from '@/components/provider/NavigationProvider';
-import { Match3Mode, match3ValidModes } from '@puzzling-potions/core';
+import { Match3Mode, match3ValidModes, type Match3ScoringConfig } from '@puzzling-potions/core';
 import { setPendingLevel } from '@/utils/levelBridge';
 import type { GameModel, EditorSnapshot } from '@/store/game-store';
 
@@ -34,6 +34,7 @@ export const LevelEditorScreenView = () => {
   const initialGoals = snapshot?.goals ?? {};
   const initialWeights = snapshot?.weights;
   const initialEnableDeadlock = snapshot?.enableDeadlock ?? false;
+  const initialScoring = snapshot?.scoring ?? {};
   // ── State ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<Match3Mode>(initialMode);
   const [duration, setDuration] = useState(initialDuration);
@@ -41,6 +42,7 @@ export const LevelEditorScreenView = () => {
   const [levelName, setLevelName] = useState(initialLevelName);
   const [goals, setGoals] = useState<Record<string, number>>(initialGoals);
   const [enableDeadlock, setEnableDeadlock] = useState(initialEnableDeadlock);
+  const [scoring, setScoring] = useState<Match3ScoringConfig>(initialScoring);
   const [weights, setWeights] = useState<number[]>(() =>
     Array.from({ length: PIECE_COUNT[initialMode] }, (_, i) => initialWeights?.[i] ?? 1),
   );
@@ -158,7 +160,7 @@ export const LevelEditorScreenView = () => {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handlePlay = () => {
-    saveSnapshot({ grid, mode, duration, movesLimit, levelName, goals, weights, enableDeadlock });
+    saveSnapshot({ grid, mode, duration, movesLimit, levelName, goals, weights, enableDeadlock, scoring });
     setPendingLevel({
       rows: ROWS,
       columns: COLUMNS,
@@ -172,6 +174,7 @@ export const LevelEditorScreenView = () => {
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
       enableDeadlock,
+      scoring: Object.keys(scoring).length > 0 ? scoring : undefined,
     });
     navigate('game');
   };
@@ -190,6 +193,7 @@ export const LevelEditorScreenView = () => {
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
       enableDeadlock,
+      scoring: Object.keys(scoring).length > 0 ? scoring : undefined,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -214,6 +218,7 @@ export const LevelEditorScreenView = () => {
         setLevelName(data.levelName ?? '');
         setGoals(typeof data.goals === 'object' && data.goals ? data.goals : {});
         setEnableDeadlock(data.enableDeadlock === true);
+        setScoring(typeof data.scoring === 'object' && data.scoring ? data.scoring : {});
         setWeights(
           Array.isArray(data.weights)
             ? Array.from({ length: PIECE_COUNT[m] }, (_, i) => data.weights[i] ?? 1)
@@ -251,6 +256,8 @@ export const LevelEditorScreenView = () => {
         onLevelNameChange={setLevelName}
         enableDeadlock={enableDeadlock}
         onEnableDeadlockChange={setEnableDeadlock}
+        scoring={scoring}
+        onScoringChange={setScoring}
         palette={palette}
         onPaletteChange={setPalette}
         tool={tool}

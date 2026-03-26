@@ -1,58 +1,25 @@
 import { Match3Config } from '@puzzling-potions/core';
+import {
+  consumePendingLevel,
+  getEditorMode,
+  getEditorGoals,
+  isEditorPreview,
+  clearEditorPreview,
+  setPendingLevel as sharedSetPendingLevel,
+} from '@shared/utils/levelBridge';
 
-/**
- * Module-level bridge for passing a custom level config from the Level Editor
- * (React) to GameScreen (Pixi). The editor calls setPendingLevel() before
- * navigating to 'game'; GameScreen.prepare() calls consumePendingLevel() once.
- */
+export { consumePendingLevel, getEditorMode, getEditorGoals, isEditorPreview, clearEditorPreview };
 
-let pendingLevel: Match3Config | null = null;
-let fromEditor = false;
-let editorMode: Match3Config['mode'] = 'normal';
-let editorGoals: Record<string, number> = {};
+/** Last level launched from the editor — used by Play Again on result screen */
 let lastEditorLevel: Match3Config | null = null;
 
-/** Store a level config to be consumed on the next game start. */
+/** Store a level config to be consumed on the next game start. Also records it as lastEditorLevel. */
 export function setPendingLevel(data: Match3Config | null) {
-  pendingLevel = data;
-  fromEditor = data !== null;
-  if (data) {
-    editorMode = data.mode;
-    editorGoals = data.goals ?? {};
-    lastEditorLevel = data;
-  } else {
-    editorGoals = {};
-  }
+  sharedSetPendingLevel(data);
+  if (data) lastEditorLevel = data;
 }
 
 /** Returns the last editor level config (for Play Again from result screen). */
 export function getLastEditorLevel(): Match3Config | null {
   return lastEditorLevel;
-}
-
-/** Returns the mode of the level launched from the editor. */
-export function getEditorMode(): Match3Config['mode'] {
-  return editorMode;
-}
-
-/** Returns the goals of the level launched from the editor. */
-export function getEditorGoals(): Record<string, number> {
-  return editorGoals;
-}
-
-/** Read and clear the pending level config (returns null if none was set). */
-export function consumePendingLevel(): Match3Config | null {
-  const data = pendingLevel;
-  pendingLevel = null;
-  return data;
-}
-
-/** Returns true when the current game session was launched from the level editor. */
-export function isEditorPreview(): boolean {
-  return fromEditor;
-}
-
-/** Clear the editor-preview flag (call when navigating back to the editor). */
-export function clearEditorPreview() {
-  fromEditor = false;
 }

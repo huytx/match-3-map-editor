@@ -23,6 +23,20 @@ const blocks: Record<Match3Mode | 'special', string[]> = {
 
 import { Match3Grid } from './Match3Utility';
 
+/** Scoring tuning knobs — all fields are optional (defaults used when omitted) */
+export interface Match3ScoringConfig {
+  /** Points per piece popped by a normal match (default: 1) */
+  pointsPerPop?: number;
+  /** Points per piece popped by a special ability (default: 3) */
+  pointsPerSpecialPop?: number;
+  /** Multiplier applied per matched piece in a match reward (default: 1) */
+  matchPieceMultiplier?: number;
+  /** Multiplier applied to the combo bonus per match (default: 1) */
+  comboMultiplier?: number;
+  /** Baseline pts/sec used for grade thresholds (default: 8) */
+  avgPointsPerSecond?: number;
+}
+
 /** Match3 configuration */
 export interface Match3Config {
   /** Number of rows in the game */
@@ -49,6 +63,8 @@ export interface Match3Config {
   enableDeadlock?: boolean;
   /** Per-piece spawn weight (index 0 = first common piece type, weight 1–5). Higher = more frequent. */
   weights?: number[];
+  /** Optional scoring config. Omit to use default values. */
+  scoring?: Match3ScoringConfig;
 }
 
 /** Default match3 configuration */

@@ -1,5 +1,5 @@
 import { action, createStore, Action } from 'easy-peasy';
-import type { Match3Mode } from '@puzzling-potions/core';
+import type { Match3Mode, Match3ScoringConfig } from '@puzzling-potions/core';
 
 // ── Level editor snapshot ─────────────────────────────────────────────────
 export interface EditorSnapshot {
@@ -14,6 +14,8 @@ export interface EditorSnapshot {
   enableDeadlock?: boolean;
   /** Per-piece spawn weights (index 0 = first common piece, weight 1–5) */
   weights?: number[];
+  /** Scoring config overrides */
+  scoring?: Match3ScoringConfig;
 }
 
 interface EditorModel {

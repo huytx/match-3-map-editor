@@ -9,7 +9,7 @@ export type { Match3OnMatchData, Match3OnMoveData, Match3OnPopData } from './mat
 
 // Configuration
 export { match3GetConfig, match3GetBlocks, match3ValidModes } from './match3/Match3Config';
-export type { Match3Config, Match3Mode } from './match3/Match3Config';
+export type { Match3Config, Match3Mode, Match3ScoringConfig } from './match3/Match3Config';
 
 // Types & utilities
 export { MATCH3_BLOCK_TYPE, match3GridToString } from './match3/Match3Utility';

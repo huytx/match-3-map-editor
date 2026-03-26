@@ -72,7 +72,8 @@ export const GameScreenUIView = () => {
                                  transition-all cursor-pointer leading-none"
             onClick={() => {
               clearEditorPreview();
-              navigate('level-editor');
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              navigate('level-editor' as any);
             }}
           >
             ← Editor

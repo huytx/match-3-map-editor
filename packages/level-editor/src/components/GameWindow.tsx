@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { setGlobalTicker } from '@puzzling-potions/core';
 import { initAssets } from '@/utils/assets';
-import { navigation } from '@/utils/navigation';
+import { navigation, initNavigation } from '@/utils/navigation';
 import { GameScreen } from '@/screens/GameScreen';
 import eventEmitter from '@/utils/event-emitter';
 import { useNavigation } from '@/components/provider/NavigationProvider';
@@ -24,6 +24,7 @@ export const GameWindow = () => {
       });
 
       setGlobalTicker(app.ticker);
+      initNavigation(app);
 
       containerRef.current!.appendChild(app.canvas);
 

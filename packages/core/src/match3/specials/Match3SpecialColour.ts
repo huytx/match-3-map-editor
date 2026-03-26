@@ -1,6 +1,8 @@
 import { Match3 } from '../Match3';
 import { match3ForEach, Match3Position, Match3Type } from '../Match3Utility';
 
+const DEBUG = import.meta.env.VITE_DEBUG_MODE === 'true';
+
 /**
  * Process a match list to find out matches at least 5 pieces long, then spawns the Colour Blast piece in the middle.
  * Trigger the piece blast special, popping out all pieces of a single type in the grid.
@@ -33,27 +35,52 @@ export class Match3SpecialColour {
   }
 
   /**
-   * Check piece type and trigger the piece blast special, popping out all pieces of a single type in the grid.
+   * Check piece type and trigger the piece blast special, popping out all pieces of the same type
+   * as the piece this special was swapped with. Falls back to the most common type if no swapped type.
    * @param pieceType Piece type to be evaluated - the type must match for actually triggering the special
    * @param position The grid position (row & column) that is the origin of the special
+   * @param swappedType The type of the piece this special was swapped with, if triggered by a swap
    */
-  public async trigger(pieceType: Match3Type) {
+  public async trigger(pieceType: Match3Type, _position: Match3Position, swappedType?: Match3Type) {
     // Ignore if provided piece type does not match this special type
     if (pieceType !== this.pieceType) return;
 
-    // Find out which piece type has most positions in the grid
-    const numPiecesPerType: Record<number, number> = {};
-    let selectedType = 0;
-    let selectedTypeCount = 0;
-    match3ForEach(this.match3.board.grid, (_, type) => {
-      if (!this.match3.board.commonTypes.includes(type)) return;
-      if (!numPiecesPerType[type]) numPiecesPerType[type] = 0;
-      numPiecesPerType[type] += 1;
-      if (numPiecesPerType[type] >= selectedTypeCount) {
-        selectedTypeCount = numPiecesPerType[type];
-        selectedType = type;
-      }
-    });
+    if (DEBUG)
+      console.log(
+        '[SpecialColour] trigger | pieceType:',
+        pieceType,
+        '| this.pieceType:',
+        this.pieceType,
+        '| swappedType:',
+        swappedType,
+        '| commonTypes:',
+        this.match3.board.commonTypes,
+      );
+
+    let selectedType: Match3Type;
+
+    if (swappedType && this.match3.board.commonTypes.includes(swappedType)) {
+      if (DEBUG) console.log('[SpecialColour] => using swappedType:', swappedType);
+      // Use the type of the piece this special was swapped with
+      selectedType = swappedType;
+    } else {
+      if (DEBUG) console.log('[SpecialColour] => swappedType not in commonTypes, falling back to most common');
+      // Fallback: find the piece type with most positions in the grid
+      const numPiecesPerType: Record<number, number> = {};
+      let selectedTypeCount = 0;
+      selectedType = 0;
+      match3ForEach(this.match3.board.grid, (_, type) => {
+        if (!this.match3.board.commonTypes.includes(type)) return;
+        if (!numPiecesPerType[type]) numPiecesPerType[type] = 0;
+        numPiecesPerType[type] += 1;
+        if (numPiecesPerType[type] >= selectedTypeCount) {
+          selectedTypeCount = numPiecesPerType[type];
+          selectedType = type;
+        }
+      });
+    }
+
+    if (DEBUG) console.log('[SpecialColour] => selectedType to remove:', selectedType);
 
     // Find out all positions of the selected type
     const positions: Match3Position[] = [];
@@ -62,6 +89,8 @@ export class Match3SpecialColour {
         positions.push(position);
       }
     });
+
+    if (DEBUG) console.log('[SpecialColour] => removing', positions.length, 'pieces of type', selectedType);
 
     // Pop out all positions found
     await this.match3.board.popPieces(positions, true);

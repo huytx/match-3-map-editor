@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { match3ValidModes } from '@puzzling-potions/core';
+import { match3ValidModes, type Match3ScoringConfig } from '@puzzling-potions/core';
 import type { Match3Mode } from '@puzzling-potions/core';
 import { PIECE_COUNT, PIECE_INFO, SPECIAL_INFO, BLOCK_INFO } from './constants';
 import type { PaletteEntry, ToolMode } from './constants';
 import { BrushPickerOverlay } from './BrushPickerOverlay';
 import { GoalsOverlay } from './GoalsOverlay';
+import { ScoringOverlay } from './ScoringOverlay';
 
 const TOOLS: [ToolMode, string, string][] = [
   ['paint', '✏️', 'Paint (P)'],
@@ -40,6 +41,8 @@ interface Props {
   onGoalCountChange: (name: string, count: number) => void;
   activeGoals: Record<string, number>;
   goalsEnabled: boolean;
+  scoring: Match3ScoringConfig;
+  onScoringChange: (s: Match3ScoringConfig) => void;
   onPlay: () => void;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -73,12 +76,15 @@ export function EditorLeftPanel({
   onGoalCountChange,
   activeGoals,
   goalsEnabled,
+  scoring,
+  onScoringChange,
   onPlay,
   onExport,
   onImport,
 }: Props) {
   const [brushOverlayOpen, setBrushOverlayOpen] = useState(false);
   const [goalsOverlayOpen, setGoalsOverlayOpen] = useState(false);
+  const [scoringOverlayOpen, setScoringOverlayOpen] = useState(false);
 
   const brushInfo =
     palette.kind === 'piece'
@@ -373,10 +379,28 @@ export function EditorLeftPanel({
           )}
         </section>
 
-        {/* Spacer pushes actions to bottom */}
         <div className="flex-1" />
 
-        {/* Actions */}
+        {/* Scoring */}
+        <section className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-gold/70 text-[10px] uppercase tracking-widest font-bold">Scoring</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-white/30">
+                {Object.keys(scoring).length > 0 ? `${Object.keys(scoring).length} custom` : 'default'}
+              </span>
+              <button
+                onClick={() => setScoringOverlayOpen(true)}
+                className="text-[9px] text-gold/70 hover:text-gold border border-gold/30 hover:border-gold/60
+                           rounded px-1.5 py-0.5 cursor-pointer transition-colors"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Spacer pushes actions to bottom */}
         <section className="flex flex-col gap-3 shrink-0">
           <button className="btn-play text-sm py-2.5 px-2" onClick={onPlay}>
             ▶ Play Level
@@ -399,6 +423,15 @@ export function EditorLeftPanel({
           </div>
         </section>
       </div>
+
+      {/* Scoring overlay */}
+      {scoringOverlayOpen && (
+        <ScoringOverlay
+          onClose={() => setScoringOverlayOpen(false)}
+          scoring={scoring}
+          onScoringChange={onScoringChange}
+        />
+      )}
 
       {/* Brush picker overlay */}
       {brushOverlayOpen && (

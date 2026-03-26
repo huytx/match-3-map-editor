@@ -8,6 +8,8 @@ export default {
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@shared': path.resolve(__dirname, '../shared/src'),
+      '@puzzling-potions/core': path.resolve(__dirname, '../core/src/index.ts'),
     },
   },
   server: {

@@ -117,7 +117,8 @@ export const ResultScreenView = () => {
             className="text-sm text-white/50 hover:text-white/80 transition-colors cursor-pointer"
             onClick={() => {
               clearEditorPreview();
-              navigate('level-editor');
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              navigate('level-editor' as any);
             }}
           >
             ← Back to Editor
