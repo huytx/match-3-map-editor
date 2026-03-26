@@ -10,6 +10,7 @@ let pendingLevel: Match3Config | null = null;
 let fromEditor = false;
 let editorMode: Match3Config['mode'] = 'normal';
 let editorGoals: Record<string, number> = {};
+let lastEditorLevel: Match3Config | null = null;
 
 /** Store a level config to be consumed on the next game start. */
 export function setPendingLevel(data: Match3Config | null) {
@@ -18,9 +19,15 @@ export function setPendingLevel(data: Match3Config | null) {
   if (data) {
     editorMode = data.mode;
     editorGoals = data.goals ?? {};
+    lastEditorLevel = data;
   } else {
     editorGoals = {};
   }
+}
+
+/** Returns the last editor level config (for Play Again from result screen). */
+export function getLastEditorLevel(): Match3Config | null {
+  return lastEditorLevel;
 }
 
 /** Returns the mode of the level launched from the editor. */

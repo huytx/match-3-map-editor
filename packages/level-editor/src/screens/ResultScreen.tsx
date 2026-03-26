@@ -1,8 +1,14 @@
 import { useRef, useEffect } from 'react';
 import { useNavigation } from '@/components/provider/NavigationProvider';
-import { userSettings } from '@/utils/userSettings';
 import { userStats } from '@/utils/userStats';
-import { isEditorPreview, clearEditorPreview, getEditorMode, getEditorGoals } from '@/utils/levelBridge';
+import {
+  isEditorPreview,
+  clearEditorPreview,
+  getEditorMode,
+  getEditorGoals,
+  setPendingLevel,
+  getLastEditorLevel,
+} from '@/utils/levelBridge';
 
 const PIECE_COLOR: Record<string, string> = {
   'piece-dragon': '#e8412b',
@@ -13,29 +19,17 @@ const PIECE_COLOR: Record<string, string> = {
   'piece-yeti': '#a8e4f0',
 };
 
-function buildStars(grade: number): string {
-  const n = Math.max(0, Math.min(3, grade));
-  return '⭐'.repeat(n) + '☆'.repeat(3 - n);
-}
-
-function gradeLabel(grade: number): string {
-  return (['Better luck next time!', 'Good job!', 'Great job!', 'Amazing!'] as const)[Math.max(0, Math.min(3, grade))];
-}
-
 export const ResultScreenView = () => {
   const { navigate } = useNavigation();
   const ref = useRef<HTMLDivElement>(null);
 
-  const editorPreview = isEditorPreview();
-  const mode = editorPreview ? getEditorMode() : userSettings.getGameMode();
+  const mode = getEditorMode();
   const goals = getEditorGoals();
   const hasGoals = Object.keys(goals).length > 0;
   const performance = userStats.load(mode);
-  const bestScore = userStats.loadBestScore(mode);
-  const { score = 0, grade = 0 } = performance;
+  const { score = 0 } = performance;
   const clearedByName =
     (performance as typeof performance & { clearedByName?: Record<string, number> }).clearedByName ?? {};
-  const isBest = !editorPreview && score > 0 && score >= bestScore;
   const goalsAllMet = hasGoals && Object.entries(goals).every(([n, r]) => (clearedByName[n] ?? 0) >= r);
 
   useEffect(() => {
@@ -94,22 +88,19 @@ export const ResultScreenView = () => {
             </div>
           </>
         ) : (
-          <>
-            <div className="text-[40px] tracking-[6px] leading-none">{buildStars(grade)}</div>
-            <div className="bg-white text-purple font-bold text-[15px] rounded-[20px] px-6 py-2">
-              {gradeLabel(grade)}
-            </div>
-            <div className="text-[clamp(48px,12vw,72px)] font-bold text-white leading-none mt-1.5">
-              {score.toLocaleString()}
-            </div>
-            <div className="text-sm text-gold">
-              {isBest ? '🏆 New best score!' : `Best: ${bestScore.toLocaleString()}`}
-            </div>
-          </>
+          <div className="text-[clamp(48px,12vw,72px)] font-bold text-white leading-none mt-1.5">
+            {score.toLocaleString()}
+          </div>
         )}
       </div>
       <div className="py-6 pb-9 flex flex-col items-center gap-3">
-        <button className="btn-play" onClick={() => navigate('game')}>
+        <button
+          className="btn-play"
+          onClick={() => {
+            if (isEditorPreview()) setPendingLevel(getLastEditorLevel());
+            navigate('game');
+          }}
+        >
           ▶ Play Again
         </button>
         {isEditorPreview() && (

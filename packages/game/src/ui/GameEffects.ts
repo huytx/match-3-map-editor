@@ -157,7 +157,7 @@ export class GameEffects extends Container {
     gsap.to(animatedPiece.scale, { x: 2, y: 2, duration, ease: 'linear' });
     await gsap.to(animatedPiece, { x, duration, ease: 'linear' });
     this.removeChild(animatedPiece);
-    pool.giveBack(piece);
+    pool.giveBack(animatedPiece);
   }
 
   /** Explode all pieces out of the board, when gameplay finishes */
