@@ -210,7 +210,9 @@ export class Match3Process {
       log('[Match3] Checkpoint - Another sequence run is needed');
       // Run it again if there are any new matches or empty spaces in the grid
       this.runProcessRound();
-    } else if (!match3HasPossibleMoves(this.match3.board.grid, this.match3.board.commonTypes, this.match3.special.specialTypes)) {
+    } else if (
+      !match3HasPossibleMoves(this.match3.board.grid, this.match3.board.commonTypes, this.match3.special.specialTypes)
+    ) {
       log('[Match3] Checkpoint - No valid moves left');
       // If deadlock is enabled, emit event to end game
       if (this.match3.config.enableDeadlock) {
