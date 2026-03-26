@@ -434,14 +434,29 @@ export function match3StringToPosition(str: string) {
 
 /**
  * Check if there is at least one valid move remaining in the grid.
- * A valid move is a swap of two adjacent common-type pieces that would result in a match.
+ * A valid move is either: a swap of two adjacent common-type pieces that results in a match,
+ * or any swap involving a special piece (which always triggers its effect).
  * @param grid The grid to be checked
  * @param commonTypes The list of common (non-special) piece types
+ * @param specialTypes The list of special piece types (optional)
  * @returns True if at least one valid move exists
  */
-export function match3HasPossibleMoves(grid: Match3Grid, commonTypes: Match3Type[]): boolean {
+export function match3HasPossibleMoves(
+  grid: Match3Grid,
+  commonTypes: Match3Type[],
+  specialTypes: Match3Type[] = [],
+): boolean {
   const rows = grid.length;
   const columns = grid[0].length;
+
+  // Any special piece on the board always has at least one valid swap (triggers its effect)
+  if (specialTypes.length > 0) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < columns; c++) {
+        if (specialTypes.includes(grid[r][c])) return true;
+      }
+    }
+  }
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < columns; c++) {
