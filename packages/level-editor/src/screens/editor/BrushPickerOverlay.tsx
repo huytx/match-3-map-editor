@@ -1,4 +1,4 @@
-import { PIECE_INFO, SPECIAL_INFO, BLOCK_INFO } from './constants';
+import { PIECE_INFO, SPECIAL_INFO, BLOCK_INFO, ICE_INFO } from './constants';
 import type { PaletteEntry, ToolMode } from './constants';
 
 interface Props {
@@ -126,13 +126,43 @@ export function BrushPickerOverlay({ onClose, palette, onPaletteChange, tool, on
           })()}
         </div>
 
-        <button
-          onClick={onClose}
-          className="mt-1 w-full bg-gold/15 hover:bg-gold/25 border border-gold/30 text-gold
-                     rounded-xl py-2 text-xs font-bold cursor-pointer transition-colors shrink-0"
-        >
-          Done
-        </button>
+        <div className="h-px bg-white/10" />
+
+        {/* Ice layer */}
+        <div className="flex flex-col gap-2">
+          <span className="text-white/30 text-[9px] uppercase tracking-wide">Ice Layer</span>
+          <div className="grid grid-cols-3 gap-1.5">
+            {ICE_INFO.map((info) => {
+              const active = palette.kind === 'ice' && palette.hp === info.hp;
+              return (
+                <button
+                  key={info.hp}
+                  onClick={() => {
+                    onPaletteChange({ kind: 'ice', hp: info.hp });
+                    if (tool === 'remove') onToolChange('paint');
+                    onClose();
+                  }}
+                  className="flex flex-col items-center gap-1.5 rounded-xl py-3 px-1 cursor-pointer transition-all border-2"
+                  style={{
+                    borderColor: active ? info.bg : 'transparent',
+                    backgroundColor: active ? info.bg + '25' : 'rgba(255,255,255,0.05)',
+                    boxShadow: active ? `0 0 12px ${info.bg}50` : 'none',
+                  }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-md flex items-center justify-center text-base"
+                    style={{ backgroundColor: info.bg + '30', border: `2px solid ${info.bg}70` }}
+                  >
+                    ❄️
+                  </div>
+                  <span className="text-[9px] text-white/70">{info.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <button>Done</button>
       </div>
     </div>
   );

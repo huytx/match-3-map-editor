@@ -34,7 +34,9 @@ export const LevelEditorScreenView = () => {
   const initialGoals = snapshot?.goals ?? {};
   const initialWeights = snapshot?.weights;
   const initialEnableDeadlock = snapshot?.enableDeadlock ?? false;
+  const initialClearIceWin = snapshot?.clearIceWin ?? false;
   const initialScoring = snapshot?.scoring ?? {};
+  const initialIceGrid = snapshot?.iceGrid ?? Array.from({ length: ROWS }, () => Array(COLUMNS).fill(0) as number[]);
   // ── State ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<Match3Mode>(initialMode);
   const [duration, setDuration] = useState(initialDuration);
@@ -42,6 +44,7 @@ export const LevelEditorScreenView = () => {
   const [levelName, setLevelName] = useState(initialLevelName);
   const [goals, setGoals] = useState<Record<string, number>>(initialGoals);
   const [enableDeadlock, setEnableDeadlock] = useState(initialEnableDeadlock);
+  const [clearIceWin, setClearIceWin] = useState(initialClearIceWin);
   const [scoring, setScoring] = useState<Match3ScoringConfig>(initialScoring);
   const [weights, setWeights] = useState<number[]>(() =>
     Array.from({ length: PIECE_COUNT[initialMode] }, (_, i) => initialWeights?.[i] ?? 1),
@@ -50,6 +53,7 @@ export const LevelEditorScreenView = () => {
   const [tool, setTool] = useState<ToolMode>('paint');
   const [hovered, setHovered] = useState<[number, number] | null>(null);
   const isPainting = useRef(false);
+  const [iceGrid, setIceGrid] = useState<number[][]>(initialIceGrid);
 
   const { grid, push, undo, redo, canUndo, canRedo } = useHistory(initialGrid);
   const maxType = PIECE_COUNT[mode];
@@ -127,24 +131,44 @@ export const LevelEditorScreenView = () => {
     [paintValue],
   );
 
+  const applyIcePaint = useCallback(
+    (r: number, c: number, ig: number[][]): number[][] => {
+      const next = ig.map((row) => [...row]);
+      next[r][c] = tool === 'remove' ? 0 : palette.kind === 'ice' ? palette.hp : 0;
+      return next;
+    },
+    [palette, tool],
+  );
+
   const handleCellDown = useCallback(
     (r: number, c: number) => {
       isPainting.current = true;
-      if (tool === 'fill') {
+      if (palette.kind === 'ice') {
+        if (tool === 'fill') {
+          const hp = palette.hp;
+          setIceGrid((ig) => floodFill(ig, r, c, hp));
+        } else {
+          setIceGrid((ig) => applyIcePaint(r, c, ig));
+        }
+      } else if (tool === 'fill') {
         push(floodFill(grid, r, c, paintValue()));
       } else {
         push(applyPaint(r, c, grid));
       }
     },
-    [grid, tool, push, applyPaint, paintValue],
+    [grid, tool, palette, push, applyPaint, applyIcePaint, paintValue],
   );
 
   const handleCellEnter = useCallback(
     (r: number, c: number) => {
       if (!isPainting.current || tool === 'fill') return;
-      push(applyPaint(r, c, grid));
+      if (palette.kind === 'ice') {
+        setIceGrid((ig) => applyIcePaint(r, c, ig));
+      } else {
+        push(applyPaint(r, c, grid));
+      }
     },
-    [grid, tool, push, applyPaint],
+    [grid, tool, palette, push, applyPaint, applyIcePaint],
   );
 
   // ── Resolve grid (specials → actual type offsets) ─────────────────────────
@@ -159,8 +183,22 @@ export const LevelEditorScreenView = () => {
   }, [grid, maxType]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
+  const hasIce = iceGrid.some((row) => row.some((v) => v > 0));
+
   const handlePlay = () => {
-    saveSnapshot({ grid, mode, duration, movesLimit, levelName, goals, weights, enableDeadlock, scoring });
+    saveSnapshot({
+      grid,
+      mode,
+      duration,
+      movesLimit,
+      levelName,
+      goals,
+      weights,
+      enableDeadlock,
+      clearIceWin,
+      scoring,
+      iceGrid: hasIce ? iceGrid : undefined,
+    });
     setPendingLevel({
       rows: ROWS,
       columns: COLUMNS,
@@ -171,6 +209,8 @@ export const LevelEditorScreenView = () => {
       mode,
       levelName: levelName || undefined,
       grid: resolveGrid(),
+      iceGrid: hasIce ? iceGrid : undefined,
+      clearIceWin: clearIceWin && hasIce ? true : undefined,
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
       enableDeadlock,
@@ -190,6 +230,8 @@ export const LevelEditorScreenView = () => {
       maxMoves: movesLimit > 0 ? movesLimit : undefined,
       mode,
       grid: resolveGrid(),
+      iceGrid: hasIce ? iceGrid : undefined,
+      clearIceWin: clearIceWin && hasIce ? true : undefined,
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
       enableDeadlock,
@@ -218,6 +260,7 @@ export const LevelEditorScreenView = () => {
         setLevelName(data.levelName ?? '');
         setGoals(typeof data.goals === 'object' && data.goals ? data.goals : {});
         setEnableDeadlock(data.enableDeadlock === true);
+        setClearIceWin(data.clearIceWin === true);
         setScoring(typeof data.scoring === 'object' && data.scoring ? data.scoring : {});
         setWeights(
           Array.isArray(data.weights)
@@ -225,6 +268,11 @@ export const LevelEditorScreenView = () => {
             : Array.from({ length: PIECE_COUNT[m] }, () => 1),
         );
         push(Array.isArray(data.grid) ? adaptGrid(data.grid, PIECE_COUNT[m]) : makeEmptyGrid());
+        setIceGrid(
+          Array.isArray(data.iceGrid)
+            ? data.iceGrid.map((row: unknown[]) => row.map((v) => (typeof v === 'number' && v >= 0 && v <= 3 ? v : 0)))
+            : Array.from({ length: ROWS }, () => Array(COLUMNS).fill(0) as number[]),
+        );
       } catch {
         /* ignore bad JSON */
       }
@@ -256,6 +304,8 @@ export const LevelEditorScreenView = () => {
         onLevelNameChange={setLevelName}
         enableDeadlock={enableDeadlock}
         onEnableDeadlockChange={setEnableDeadlock}
+        clearIceWin={clearIceWin}
+        onClearIceWinChange={setClearIceWin}
         scoring={scoring}
         onScoringChange={setScoring}
         palette={palette}
@@ -282,6 +332,7 @@ export const LevelEditorScreenView = () => {
       />
       <EditorGrid
         grid={grid}
+        iceGrid={iceGrid}
         hovered={hovered}
         onHover={setHovered}
         isPainting={isPainting}

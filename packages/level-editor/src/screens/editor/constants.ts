@@ -28,5 +28,15 @@ export const SPECIAL_INFO = [
 
 export const BLOCK_INFO = { name: 'Block', bg: '#7a6e8e', img: '' } as const;
 
-export type PaletteEntry = { kind: 'piece'; type: number } | { kind: 'special'; index: number } | { kind: 'block' };
+export const ICE_INFO = [
+  { name: 'Ice ×1', bg: '#88ddff', hp: 1 as const },
+  { name: 'Ice ×2', bg: '#44aaee', hp: 2 as const },
+  { name: 'Ice ×3', bg: '#1177bb', hp: 3 as const },
+] as const;
+
+export type PaletteEntry =
+  | { kind: 'piece'; type: number }
+  | { kind: 'special'; index: number }
+  | { kind: 'block' }
+  | { kind: 'ice'; hp: 1 | 2 | 3 };
 export type ToolMode = 'paint' | 'fill' | 'remove';

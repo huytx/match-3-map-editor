@@ -55,6 +55,8 @@ export class GameScreen extends Container {
   private finished = false;
   /** Remaining moves (0 means unlimited) */
   private movesLeft = 0;
+  /** Message to show on the end-game screen */
+  private finishMessage = i18n.timesUp;
 
   constructor() {
     super();
@@ -79,6 +81,8 @@ export class GameScreen extends Container {
     this.match3.onProcessComplete = this.onProcessComplete.bind(this);
     this.match3.onTimesUp = this.onTimesUp.bind(this);
     this.match3.onDeadlock = this.onDeadlock.bind(this);
+    this.match3.onIceDamaged = this.onIceDamaged.bind(this);
+    this.match3.onAllIceCleared = this.onAllIceCleared.bind(this);
     this.gameContainer.addChild(this.match3);
 
     this.comboMessage = new CloudLabel({ color: 0x2c136c, labelColor: 0xffffff });
@@ -203,6 +207,7 @@ export class GameScreen extends Container {
   /** Hide screen with animations */
   public async hide() {
     this.overtime.hide();
+    this.timesUp.setMessage(this.finishMessage);
     this.vfx?.playGridExplosion();
     await waitFor(0.3);
     await this.timesUp.playRevealAnimation();
@@ -240,12 +245,14 @@ export class GameScreen extends Container {
     // Check if all clear goals are met
     if (this.goalsCompleted()) {
       this.match3.stopPlaying();
+      this.finishMessage = i18n.goalsCompleted;
       this.finish();
       return;
     }
     // Check if moves are exhausted (only if maxMoves is set and timeless mode is off)
     if (this.match3.config.maxMoves && this.movesLeft <= 0) {
       this.match3.stopPlaying();
+      this.finishMessage = i18n.noMovesLeft;
       this.finish();
       return;
     }
@@ -258,6 +265,7 @@ export class GameScreen extends Container {
   /** Fires when the game timer ends */
   private onTimesUp() {
     this.pauseButton.hide();
+    this.finishMessage = i18n.timesUp;
     this.match3.stopPlaying();
     // Only finishes the game if match 3 is not auto-processing the grid
     if (!this.match3.process.isProcessing()) this.finish();
@@ -265,9 +273,23 @@ export class GameScreen extends Container {
 
   /** Fires when deadlock is detected and enableDeadlock is true */
   private onDeadlock() {
+    this.finishMessage = i18n.deadlock;
     this.match3.stopPlaying();
     // Only finishes the game if match 3 is not auto-processing the grid
     if (!this.match3.process.isProcessing()) this.finish();
+  }
+
+  /** Fires when an iced piece takes damage */
+  private onIceDamaged(_position: { row: number; column: number }, _hp: number) {
+    // Placeholder for future effects (sounds, particles)
+  }
+
+  /** Fires when all ice has been cleared and config.clearIceWin is true */
+  private onAllIceCleared() {
+    if (this.finished) return;
+    this.match3.stopPlaying();
+    this.finishMessage = i18n.iceCleared;
+    this.finish();
   }
 
   /** Returns true when all goals in config.goals have been met */

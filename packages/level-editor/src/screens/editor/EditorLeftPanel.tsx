@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { match3ValidModes, type Match3ScoringConfig } from '@puzzling-potions/core';
 import type { Match3Mode } from '@puzzling-potions/core';
-import { PIECE_COUNT, PIECE_INFO, SPECIAL_INFO, BLOCK_INFO } from './constants';
+import { PIECE_COUNT, PIECE_INFO, SPECIAL_INFO, BLOCK_INFO, ICE_INFO } from './constants';
 import type { PaletteEntry, ToolMode } from './constants';
 import { BrushPickerOverlay } from './BrushPickerOverlay';
 import { GoalsOverlay } from './GoalsOverlay';
@@ -27,6 +27,8 @@ interface Props {
   onMovesLimitChange: (m: number) => void;
   enableDeadlock: boolean;
   onEnableDeadlockChange: (e: boolean) => void;
+  clearIceWin: boolean;
+  onClearIceWinChange: (v: boolean) => void;
   levelName: string;
   onLevelNameChange: (l: string) => void;
   palette: PaletteEntry;
@@ -62,6 +64,8 @@ export function EditorLeftPanel({
   onMovesLimitChange,
   enableDeadlock,
   onEnableDeadlockChange,
+  clearIceWin,
+  onClearIceWinChange,
   levelName,
   onLevelNameChange,
   palette,
@@ -91,8 +95,17 @@ export function EditorLeftPanel({
       ? PIECE_INFO[palette.type - 1]
       : palette.kind === 'block'
         ? BLOCK_INFO
-        : SPECIAL_INFO[palette.index];
-  const brushKindLabel = palette.kind === 'piece' ? 'Piece' : palette.kind === 'block' ? 'Block' : 'Special';
+        : palette.kind === 'ice'
+          ? ICE_INFO[palette.hp - 1]
+          : SPECIAL_INFO[palette.index];
+  const brushKindLabel =
+    palette.kind === 'piece'
+      ? 'Piece'
+      : palette.kind === 'block'
+        ? 'Block'
+        : palette.kind === 'ice'
+          ? 'Ice Layer'
+          : 'Special';
 
   return (
     <div className="w-80 shrink-0 flex flex-col h-full border-r border-white/10 bg-black/25 overflow-y-auto relative">
@@ -195,6 +208,22 @@ export function EditorLeftPanel({
               End on Deadlock
             </label>
             <span className="text-[9px] text-white/40">{enableDeadlock ? '⚠️' : '🔄'}</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-white/15 px-2.5 py-1.5">
+            <input
+              type="checkbox"
+              id="clearicewin-toggle"
+              checked={clearIceWin}
+              onChange={(e) => onClearIceWinChange(e.target.checked)}
+              className="cursor-pointer"
+            />
+            <label
+              htmlFor="clearicewin-toggle"
+              className="text-[9px] uppercase tracking-wide text-white/70 cursor-pointer flex-1"
+            >
+              Win on Ice Clear
+            </label>
+            <span className="text-[9px] text-white/40">{clearIceWin ? '❄️' : '—'}</span>
           </div>
         </section>
 

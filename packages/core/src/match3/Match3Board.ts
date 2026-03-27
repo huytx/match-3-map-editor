@@ -40,6 +40,10 @@ export class Match3Board {
   public commonTypes: Match3Type[] = [];
   /** Map piece types to piece names */
   public typesMap!: Record<number, string>;
+  /** Ice HP layer, parallel to grid: 0 = no ice, 1–3 = ice HP */
+  public iceGrid: number[][] = [];
+  /** Tracks iced positions already damaged this process round (prevents multi-damage per round) */
+  private _iceDamagedThisRound = new Set<string>();
 
   constructor(match3: Match3) {
     this.match3 = match3;
@@ -105,9 +109,23 @@ export class Match3Board {
       ? config.grid.map((row) => [...row])
       : match3CreateGrid(this.rows, this.columns, this.commonTypes);
 
+    // Init ice layer
+    this.iceGrid = config.iceGrid
+      ? config.iceGrid.map((row) => [...row])
+      : Array.from({ length: this.rows }, () => new Array(this.columns).fill(0));
+
     // Fill up the visual board with piece sprites (skip empty cells, type=0)
     match3ForEach(this.grid, (gridPosition: Match3Position, type: Match3Type) => {
       if (type !== 0) this.createPiece(gridPosition, type);
+    });
+
+    // Apply initial ice HP to pieces
+    match3ForEach(this.grid, (pos: Match3Position, type: Match3Type) => {
+      const hp = this.iceGrid[pos.row]?.[pos.column] ?? 0;
+      if (hp > 0 && type !== 0) {
+        const piece = this.getPieceByPosition(pos);
+        if (piece) piece.setIce(hp as 1 | 2 | 3);
+      }
     });
   }
 
@@ -121,6 +139,7 @@ export class Match3Board {
       this.disposePiece(piece);
     }
     this.pieces.length = 0;
+    this.iceGrid = [];
   }
 
   /**
@@ -192,6 +211,22 @@ export class Match3Board {
     if (!type || !piece) return;
     // Block tiles are indestructible
     if (type === MATCH3_BLOCK_TYPE) return;
+
+    // Iced pieces absorb the hit: reduce HP instead of being removed
+    const iceHp = this.iceGrid[position.row]?.[position.column] ?? 0;
+    if (iceHp > 0) {
+      const key = `${position.row},${position.column}`;
+      if (!this._iceDamagedThisRound.has(key)) {
+        this._iceDamagedThisRound.add(key);
+        const newHp = iceHp - 1;
+        this.iceGrid[position.row][position.column] = newHp;
+        piece.setIce(newHp as 0 | 1 | 2 | 3);
+        this.match3.onIceDamaged?.({ row: position.row, column: position.column }, newHp);
+        this.checkAllIceCleared();
+      }
+      return;
+    }
+
     const isSpecial = this.match3.special.isSpecial(type);
     const combo = this.match3.process.getProcessRound();
 
@@ -208,6 +243,72 @@ export class Match3Board {
 
     // Trigger any specials related to this piece, if there is any
     await this.match3.special.trigger(type, position, swappedType);
+
+    // Damage ice on adjacent cells
+    await this.damageAdjacentIce(position);
+  }
+
+  /** Reduce ice HP on all four neighbours of the given position */
+  private async damageAdjacentIce(position: Match3Position) {
+    const neighbours = [
+      { row: position.row - 1, column: position.column },
+      { row: position.row + 1, column: position.column },
+      { row: position.row, column: position.column - 1 },
+      { row: position.row, column: position.column + 1 },
+    ];
+    for (const nb of neighbours) {
+      if (nb.row < 0 || nb.row >= this.rows || nb.column < 0 || nb.column >= this.columns) continue;
+      const hp = this.iceGrid[nb.row]?.[nb.column] ?? 0;
+      if (hp <= 0) continue;
+      const key = `${nb.row},${nb.column}`;
+      if (this._iceDamagedThisRound.has(key)) continue;
+      this._iceDamagedThisRound.add(key);
+      const newHp = hp - 1;
+      this.iceGrid[nb.row][nb.column] = newHp;
+      const piece = this.getPieceByPosition(nb);
+      if (piece) piece.setIce(newHp as 0 | 1 | 2 | 3);
+      this.match3.onIceDamaged?.({ row: nb.row, column: nb.column }, newHp);
+    }
+    this.checkAllIceCleared();
+  }
+
+  /** Rebuild iceGrid from current piece positions (called after gravity moves pieces) */
+  public syncIceGrid() {
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.columns; c++) {
+        this.iceGrid[r][c] = 0;
+      }
+    }
+    for (const piece of this.pieces) {
+      if (piece.iceHp > 0) {
+        this.iceGrid[piece.row][piece.column] = piece.iceHp;
+      }
+    }
+  }
+
+  /** Reset per-round ice damage tracking — call at the start of each process round */
+  public resetIceDamageTracking() {
+    this._iceDamagedThisRound.clear();
+  }
+
+  /** Return the ice HP at the given position */
+  public getIceHp(position: Match3Position): number {
+    return this.iceGrid[position.row]?.[position.column] ?? 0;
+  }
+
+  /** Fire onAllIceCleared if clearIceWin is set and no ice remains on the board */
+  private checkAllIceCleared() {
+    if (!this.match3.config.clearIceWin) return;
+    const hasIce = this.iceGrid.some((row) => row.some((hp) => hp > 0));
+    if (!hasIce) this.match3.onAllIceCleared?.();
+  }
+
+  /**
+   * Return a copy of the grid where every iced position is replaced with MATCH3_BLOCK_TYPE.
+   * Use this grid for match detection so iced pieces cannot form or be part of matches.
+   */
+  public getMaskedGrid(): Match3Grid {
+    return this.grid.map((row, r) => row.map((type, c) => (this.iceGrid[r]?.[c] > 0 ? MATCH3_BLOCK_TYPE : type)));
   }
 
   /**

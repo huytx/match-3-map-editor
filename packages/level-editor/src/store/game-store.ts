@@ -4,6 +4,8 @@ import type { Match3Mode, Match3ScoringConfig } from '@puzzling-potions/core';
 // ── Level editor snapshot ─────────────────────────────────────────────────
 export interface EditorSnapshot {
   grid: number[][];
+  /** Ice HP overlay: same dimensions as grid. 0 = no ice, 1–3 = HP layers */
+  iceGrid?: number[][];
   mode: Match3Mode;
   duration: number;
   /** Max moves limit (0 = no limit) */
@@ -12,6 +14,8 @@ export interface EditorSnapshot {
   goals: Record<string, number>;
   /** Enable deadlock - when true, game ends immediately on deadlock */
   enableDeadlock?: boolean;
+  /** When true, clearing all iced pieces triggers an immediate win */
+  clearIceWin?: boolean;
   /** Per-piece spawn weights (index 0 = first common piece, weight 1–5) */
   weights?: number[];
   /** Scoring config overrides */

@@ -14,6 +14,7 @@ function getCellStyle(type: number) {
 
 interface Props {
   grid: number[][];
+  iceGrid: number[][];
   hovered: [number, number] | null;
   onHover: (h: [number, number] | null) => void;
   isPainting: React.MutableRefObject<boolean>;
@@ -23,7 +24,17 @@ interface Props {
   onPush: (g: number[][]) => void;
 }
 
-export function EditorGrid({ grid, hovered, onHover, isPainting, onCellDown, onCellEnter, maxType, onPush }: Props) {
+export function EditorGrid({
+  grid,
+  iceGrid,
+  hovered,
+  onHover,
+  isPainting,
+  onCellDown,
+  onCellEnter,
+  maxType,
+  onPush,
+}: Props) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-w-0 gap-2 p-4">
       {/* Coord hint */}
@@ -47,14 +58,15 @@ export function EditorGrid({ grid, hovered, onHover, isPainting, onCellDown, onC
             {row.map((type, c) => {
               const { bg, border, img } = getCellStyle(type);
               const isHov = hovered?.[0] === r && hovered?.[1] === c;
+              const iceHp = iceGrid[r]?.[c] ?? 0;
               return (
                 <div
                   key={c}
-                  className="w-9 h-9 m-px rounded-md cursor-crosshair border-2 flex items-center justify-center
+                  className="relative w-9 h-9 m-px rounded-md cursor-crosshair border-2 flex items-center justify-center
                              overflow-hidden transition-transform duration-75"
                   style={{
                     backgroundColor: bg,
-                    borderColor: border,
+                    borderColor: iceHp > 0 ? `rgba(136,221,255,${0.4 + iceHp * 0.2})` : border,
                     transform: isHov ? 'scale(1.18)' : 'scale(1)',
                     zIndex: isHov ? 10 : 0,
                     boxShadow: isHov ? `0 0 10px ${border}` : 'none',
@@ -70,6 +82,20 @@ export function EditorGrid({ grid, hovered, onHover, isPainting, onCellDown, onC
                   onPointerEnter={() => onCellEnter(r, c)}
                 >
                   {img && <img src={img} alt="" className="w-full h-full object-contain pointer-events-none" />}
+                  {iceHp > 0 && (
+                    <div
+                      className="absolute inset-0 pointer-events-none rounded-sm"
+                      style={{ backgroundColor: `rgba(136,221,255,${0.15 + iceHp * 0.12})` }}
+                    />
+                  )}
+                  {iceHp > 0 && (
+                    <span
+                      className="absolute bottom-0.5 right-0.5 text-[7px] font-bold leading-none
+                                     bg-sky-400/80 text-white rounded px-0.5 pointer-events-none"
+                    >
+                      ❄{iceHp}
+                    </span>
+                  )}
                 </div>
               );
             })}

@@ -94,6 +94,7 @@ export class Match3Process {
     // Step #1 - Bump sequence number and update stats with new matches found
     this.queue.add(async () => {
       this.round += 1;
+      this.match3.board.resetIceDamageTracking();
       log(`[Match3] -- SEQUENCE ROUND #${this.round} START`);
       this.updateStats();
     });
@@ -128,7 +129,7 @@ export class Match3Process {
 
   /** Update gameplay stats with new matches found in the grid */
   private async updateStats() {
-    const matches = match3GetMatches(this.match3.board.grid);
+    const matches = match3GetMatches(this.match3.board.getMaskedGrid());
     if (!matches.length) return;
     log('[Match3] Update stats');
     const matchData = { matches, combo: this.getProcessRound() };
@@ -145,7 +146,7 @@ export class Match3Process {
   /** Clear all matches in the grid */
   private async processRegularMatches() {
     log('[Match3] Process regular matches');
-    const matches = match3GetMatches(this.match3.board.grid);
+    const matches = match3GetMatches(this.match3.board.getMaskedGrid());
     const animPromises = [];
     for (const match of matches) {
       animPromises.push(this.match3.board.popPieces(match));
@@ -171,9 +172,10 @@ export class Match3Process {
     }
 
     await Promise.all(animPromises);
-  }
 
-  /** Fill up empty spaces in the grid with new pieces falling from the top */
+    // Sync ice grid to new piece positions after gravity
+    this.match3.board.syncIceGrid();
+  }
   private async refillGrid() {
     const newPieces = match3FillUp(this.match3.board.grid, this.match3.board.commonTypes);
     log('[Match3] Refill grid - new pieces:', newPieces.length);
@@ -202,7 +204,7 @@ export class Match3Process {
   /** Check the grid if there are empty spaces and/or matches remaining, and run another process round if needed */
   private async processCheckpoint() {
     // Check if there are any remaining matches or empty spots
-    const newMatches = match3GetMatches(this.match3.board.grid);
+    const newMatches = match3GetMatches(this.match3.board.getMaskedGrid());
     const emptySpaces = match3GetEmptyPositions(this.match3.board.grid);
     log('[Match3] Checkpoint - New matches:', newMatches.length);
     log('[Match3] Checkpoint - Empty spaces:', emptySpaces.length);
@@ -211,7 +213,11 @@ export class Match3Process {
       // Run it again if there are any new matches or empty spaces in the grid
       this.runProcessRound();
     } else if (
-      !match3HasPossibleMoves(this.match3.board.grid, this.match3.board.commonTypes, this.match3.special.specialTypes)
+      !match3HasPossibleMoves(
+        this.match3.board.getMaskedGrid(),
+        this.match3.board.commonTypes,
+        this.match3.special.specialTypes,
+      )
     ) {
       log('[Match3] Checkpoint - No valid moves left');
       // If deadlock is enabled, emit event to end game

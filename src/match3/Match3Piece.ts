@@ -1,4 +1,4 @@
-import { Container, FederatedPointerEvent, Sprite, Texture } from 'pixi.js';
+import { Container, FederatedPointerEvent, Graphics, Sprite, Texture } from 'pixi.js';
 import gsap from 'gsap';
 import { Match3Position } from './Match3Utility';
 import { resolveAndKillTweens, registerCustomEase, pauseTweens, resumeTweens } from '../utils/animation';
@@ -39,6 +39,8 @@ export class Match3Piece extends Container {
   private readonly image: Sprite;
   /** The highlight sprite that can be enabled or disabled */
   private readonly highlight: Sprite;
+  /** Ice overlay drawn on top of the piece */
+  private readonly iceOverlay: Graphics;
   /** True if piece is being touched */
   private pressing = false;
   /** True if piece is being dragged */
@@ -57,6 +59,8 @@ export class Match3Piece extends Container {
   public type = 0;
   /** The name of the piece - must match one of the available textures */
   public name = '';
+  /** Ice HP (0 = no ice, 1–3 = frozen layers) */
+  public iceHp = 0;
   /** Callback that fires when the player drags the piece for a move */
   public onMove?: (from: Match3Position, to: Match3Position) => void;
   /** Callback that fires when the player tap the piece */
@@ -71,6 +75,10 @@ export class Match3Piece extends Container {
     this.image = new Sprite();
     this.image.anchor.set(0.5);
     this.addChild(this.image);
+
+    this.iceOverlay = new Graphics();
+    this.iceOverlay.visible = false;
+    this.addChild(this.iceOverlay);
 
     this.area = new Sprite(Texture.WHITE);
     this.area.anchor.set(0.5);
@@ -119,6 +127,10 @@ export class Match3Piece extends Container {
     this.area.height = opts.size;
     this.area.interactive = opts.interactive;
     this.area.cursor = 'pointer';
+    // Reset ice state on reuse
+    this.iceHp = 0;
+    this.iceOverlay.clear();
+    this.iceOverlay.visible = false;
     this.unlock();
   }
 
@@ -275,5 +287,39 @@ export class Match3Piece extends Container {
   /** Shortcut to get the grid position of the piece */
   public getGridPosition() {
     return { row: this.row, column: this.column };
+  }
+
+  /**
+   * Apply or remove an ice overlay. HP 1–3 = frozen (locked), 0 = free.
+   * HP 3 = solid ice; HP 1 = about to break (more cracks visible).
+   */
+  public setIce(hp: 0 | 1 | 2 | 3) {
+    this.iceHp = hp;
+    this.iceOverlay.clear();
+    if (hp === 0) {
+      this.iceOverlay.visible = false;
+      this.unlock();
+      return;
+    }
+    this.lock();
+    this.iceOverlay.visible = true;
+    const S = this.area.width;
+    const h = S / 2;
+    const alpha = 0.15 + hp * 0.17;
+    this.iceOverlay.roundRect(-h, -h, S, S, 6).fill({ color: 0x88ddff, alpha });
+    if (hp <= 2) {
+      this.iceOverlay
+        .moveTo(-h * 0.2, -h * 0.7)
+        .lineTo(h * 0.1, 0)
+        .lineTo(-h * 0.3, h * 0.7)
+        .stroke({ color: 0xeefbff, alpha: 0.75, width: 1.5 });
+    }
+    if (hp <= 1) {
+      this.iceOverlay
+        .moveTo(h * 0.4, -h * 0.5)
+        .lineTo(0, h * 0.2)
+        .lineTo(h * 0.6, h * 0.6)
+        .stroke({ color: 0xeefbff, alpha: 0.75, width: 1.5 });
+    }
   }
 }

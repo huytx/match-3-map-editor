@@ -84,8 +84,11 @@ export class Match3Actions {
     // Always allow move that either or both are special pieces
     if (specialFrom || specialTo) return true;
 
-    // Clone current grid so we can manipulate it safely
-    const tempGrid = match3CloneGrid(this.match3.board.grid);
+    // If either piece is iced, the move is never valid (iced pieces cannot be swapped)
+    if (this.match3.board.getIceHp(from) > 0 || this.match3.board.getIceHp(to) > 0) return false;
+
+    // Clone current masked grid (iced positions act as blocks) so we can manipulate it safely
+    const tempGrid = match3CloneGrid(this.match3.board.getMaskedGrid());
 
     // Swap pieces in the temporary cloned grid
     match3SwapPieces(tempGrid, from, to);

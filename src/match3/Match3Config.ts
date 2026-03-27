@@ -65,6 +65,10 @@ export interface Match3Config {
   weights?: number[];
   /** Optional scoring config. Omit to use default values. */
   scoring?: Match3ScoringConfig;
+  /** Optional ice overlay: same dimensions as the board grid, 0 = no ice, 1–3 = HP layers. Iced pieces are locked until cleared by adjacent matches. */
+  iceGrid?: Match3Grid;
+  /** When true, clearing all iced pieces triggers all cleared by adjacent matches. */
+  clearIceWin?: boolean;
 }
 
 /** Default match3 configuration */

@@ -79,7 +79,7 @@ export class Match3Special {
    */
   public async process() {
     for (const special of this.specialHandlers) {
-      const matches = match3GetMatches(this.match3.board.grid);
+      const matches = match3GetMatches(this.match3.board.getMaskedGrid());
       await special.process(matches);
     }
   }
