@@ -79,6 +79,8 @@ export class Match3 extends Container {
   public onIceDamaged?: (position: Match3Position, hp: number) => void;
   /** Fires when every iced piece has been cleared and config.clearIceWin is true */
   public onAllIceCleared?: () => void;
+  /** Fires when a locked piece takes damage; hp is the lock HP remaining (0 = unlocked+destroyed) */
+  public onLockDamaged?: (position: Match3Position, hp: number) => void;
 
   constructor() {
     super();

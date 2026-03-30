@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { match3ValidModes, type Match3ScoringConfig } from '@puzzling-potions/core';
 import type { Match3Mode } from '@puzzling-potions/core';
-import { PIECE_COUNT, PIECE_INFO, SPECIAL_INFO, BLOCK_INFO, ICE_INFO } from './constants';
+import { PIECE_COUNT, PIECE_INFO, SPECIAL_INFO, BLOCK_INFO, ICE_INFO, LOCK_INFO } from './constants';
 import type { PaletteEntry, ToolMode } from './constants';
 import { BrushPickerOverlay } from './BrushPickerOverlay';
 import { GoalsOverlay } from './GoalsOverlay';
@@ -97,7 +97,9 @@ export function EditorLeftPanel({
         ? BLOCK_INFO
         : palette.kind === 'ice'
           ? ICE_INFO[palette.hp - 1]
-          : SPECIAL_INFO[palette.index];
+          : palette.kind === 'lock'
+            ? LOCK_INFO[palette.hp - 1]
+            : SPECIAL_INFO[palette.index];
   const brushKindLabel =
     palette.kind === 'piece'
       ? 'Piece'
@@ -105,7 +107,9 @@ export function EditorLeftPanel({
         ? 'Block'
         : palette.kind === 'ice'
           ? 'Ice Layer'
-          : 'Special';
+          : palette.kind === 'lock'
+            ? 'Lock Layer'
+            : 'Special';
 
   return (
     <div className="w-80 shrink-0 flex flex-col h-full border-r border-white/10 bg-black/25 overflow-y-auto relative">

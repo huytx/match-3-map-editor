@@ -41,6 +41,8 @@ export class Match3Piece extends Container {
   private readonly highlight: Sprite;
   /** Ice overlay drawn on top of the piece */
   private readonly iceOverlay: Graphics;
+  /** Lock overlay drawn on top of the piece */
+  private readonly lockOverlay: Graphics;
   /** True if piece is being touched */
   private pressing = false;
   /** True if piece is being dragged */
@@ -61,6 +63,8 @@ export class Match3Piece extends Container {
   public name = '';
   /** Ice HP (0 = no ice, 1–3 = frozen layers) */
   public iceHp = 0;
+  /** Lock HP (0 = no lock, 1–2 = locked layers) */
+  public lockHp = 0;
   /** Callback that fires when the player drags the piece for a move */
   public onMove?: (from: Match3Position, to: Match3Position) => void;
   /** Callback that fires when the player tap the piece */
@@ -79,6 +83,10 @@ export class Match3Piece extends Container {
     this.iceOverlay = new Graphics();
     this.iceOverlay.visible = false;
     this.addChild(this.iceOverlay);
+
+    this.lockOverlay = new Graphics();
+    this.lockOverlay.visible = false;
+    this.addChild(this.lockOverlay);
 
     this.area = new Sprite(Texture.WHITE);
     this.area.anchor.set(0.5);
@@ -131,6 +139,10 @@ export class Match3Piece extends Container {
     this.iceHp = 0;
     this.iceOverlay.clear();
     this.iceOverlay.visible = false;
+    // Reset lock state on reuse
+    this.lockHp = 0;
+    this.lockOverlay.clear();
+    this.lockOverlay.visible = false;
     this.unlock();
   }
 
@@ -323,6 +335,48 @@ export class Match3Piece extends Container {
         .lineTo(0, h * 0.2)
         .lineTo(h * 0.6, h * 0.6)
         .stroke({ color: 0xeefbff, alpha: 0.75, width: 1.5 });
+    }
+  }
+
+  /**
+   * Apply or remove a lock overlay. HP 1–2 = locked (needs matches to clear), 0 = free.
+   * Unlike ice, locked pieces remain interactive — the player can still drag/match them.
+   * HP is reduced each time the piece is part of a match; at 0 the piece is destroyed.
+   */
+  public setLock(hp: 0 | 1 | 2) {
+    this.lockHp = hp;
+    this.lockOverlay.clear();
+    if (hp === 0) {
+      this.lockOverlay.visible = false;
+      return;
+    }
+    this.lockOverlay.visible = true;
+    const S = this.area.width;
+    const h = S / 2;
+    // Amber fill — HP2 more opaque
+    const alpha = 0.2 + hp * 0.15;
+    this.lockOverlay.roundRect(-h, -h, S, S, 6).fill({ color: 0xd48a00, alpha });
+    // Corner bracket marks (gold)
+    const bLen = h * 0.42;
+    const bW = 3.5;
+    for (const [dx, dy] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ] as [number, number][]) {
+      const x0 = dx * (h - 3);
+      const y0 = dy * (h - 3);
+      this.lockOverlay
+        .rect(x0 - (dx > 0 ? bW : 0), y0 - (dy > 0 ? bW : 0), bW, dy * bLen)
+        .fill({ color: 0xffd060, alpha: 0.9 });
+      this.lockOverlay
+        .rect(x0 - (dx > 0 ? bLen : 0), y0 - (dy > 0 ? bW : 0), dx * bLen, bW)
+        .fill({ color: 0xffd060, alpha: 0.9 });
+    }
+    // HP=2: add horizontal bar across middle (chain look)
+    if (hp === 2) {
+      this.lockOverlay.rect(-h * 0.55, -bW / 2, h * 1.1, bW).fill({ color: 0xffd060, alpha: 0.75 });
     }
   }
 }

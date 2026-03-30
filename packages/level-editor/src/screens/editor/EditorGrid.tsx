@@ -15,6 +15,7 @@ function getCellStyle(type: number) {
 interface Props {
   grid: number[][];
   iceGrid: number[][];
+  lockGrid: number[][];
   hovered: [number, number] | null;
   onHover: (h: [number, number] | null) => void;
   isPainting: React.MutableRefObject<boolean>;
@@ -27,6 +28,7 @@ interface Props {
 export function EditorGrid({
   grid,
   iceGrid,
+  lockGrid,
   hovered,
   onHover,
   isPainting,
@@ -59,6 +61,7 @@ export function EditorGrid({
               const { bg, border, img } = getCellStyle(type);
               const isHov = hovered?.[0] === r && hovered?.[1] === c;
               const iceHp = iceGrid[r]?.[c] ?? 0;
+              const lockHp = lockGrid[r]?.[c] ?? 0;
               return (
                 <div
                   key={c}
@@ -66,7 +69,12 @@ export function EditorGrid({
                              overflow-hidden transition-transform duration-75"
                   style={{
                     backgroundColor: bg,
-                    borderColor: iceHp > 0 ? `rgba(136,221,255,${0.4 + iceHp * 0.2})` : border,
+                    borderColor:
+                      lockHp > 0
+                        ? `rgba(212,138,0,${0.5 + lockHp * 0.2})`
+                        : iceHp > 0
+                          ? `rgba(136,221,255,${0.4 + iceHp * 0.2})`
+                          : border,
                     transform: isHov ? 'scale(1.18)' : 'scale(1)',
                     zIndex: isHov ? 10 : 0,
                     boxShadow: isHov ? `0 0 10px ${border}` : 'none',
@@ -94,6 +102,14 @@ export function EditorGrid({
                                      bg-sky-400/80 text-white rounded px-0.5 pointer-events-none"
                     >
                       ❄{iceHp}
+                    </span>
+                  )}
+                  {lockHp > 0 && (
+                    <span
+                      className="absolute top-0.5 right-0.5 text-[7px] font-bold leading-none
+                                     bg-amber-600/90 text-white rounded px-0.5 pointer-events-none"
+                    >
+                      🔒{lockHp}
                     </span>
                   )}
                 </div>

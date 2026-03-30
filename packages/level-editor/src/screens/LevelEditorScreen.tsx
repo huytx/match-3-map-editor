@@ -37,6 +37,7 @@ export const LevelEditorScreenView = () => {
   const initialClearIceWin = snapshot?.clearIceWin ?? false;
   const initialScoring = snapshot?.scoring ?? {};
   const initialIceGrid = snapshot?.iceGrid ?? Array.from({ length: ROWS }, () => Array(COLUMNS).fill(0) as number[]);
+  const initialLockGrid = snapshot?.lockGrid ?? Array.from({ length: ROWS }, () => Array(COLUMNS).fill(0) as number[]);
   // ── State ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<Match3Mode>(initialMode);
   const [duration, setDuration] = useState(initialDuration);
@@ -54,6 +55,7 @@ export const LevelEditorScreenView = () => {
   const [hovered, setHovered] = useState<[number, number] | null>(null);
   const isPainting = useRef(false);
   const [iceGrid, setIceGrid] = useState<number[][]>(initialIceGrid);
+  const [lockGrid, setLockGrid] = useState<number[][]>(initialLockGrid);
 
   const { grid, push, undo, redo, canUndo, canRedo } = useHistory(initialGrid);
   const maxType = PIECE_COUNT[mode];
@@ -140,6 +142,15 @@ export const LevelEditorScreenView = () => {
     [palette, tool],
   );
 
+  const applyLockPaint = useCallback(
+    (r: number, c: number, lg: number[][]): number[][] => {
+      const next = lg.map((row) => [...row]);
+      next[r][c] = tool === 'remove' ? 0 : palette.kind === 'lock' ? palette.hp : 0;
+      return next;
+    },
+    [palette, tool],
+  );
+
   const handleCellDown = useCallback(
     (r: number, c: number) => {
       isPainting.current = true;
@@ -150,13 +161,20 @@ export const LevelEditorScreenView = () => {
         } else {
           setIceGrid((ig) => applyIcePaint(r, c, ig));
         }
+      } else if (palette.kind === 'lock') {
+        if (tool === 'fill') {
+          const hp = palette.hp;
+          setLockGrid((lg) => floodFill(lg, r, c, hp));
+        } else {
+          setLockGrid((lg) => applyLockPaint(r, c, lg));
+        }
       } else if (tool === 'fill') {
         push(floodFill(grid, r, c, paintValue()));
       } else {
         push(applyPaint(r, c, grid));
       }
     },
-    [grid, tool, palette, push, applyPaint, applyIcePaint, paintValue],
+    [grid, tool, palette, push, applyPaint, applyIcePaint, applyLockPaint, paintValue],
   );
 
   const handleCellEnter = useCallback(
@@ -164,11 +182,13 @@ export const LevelEditorScreenView = () => {
       if (!isPainting.current || tool === 'fill') return;
       if (palette.kind === 'ice') {
         setIceGrid((ig) => applyIcePaint(r, c, ig));
+      } else if (palette.kind === 'lock') {
+        setLockGrid((lg) => applyLockPaint(r, c, lg));
       } else {
         push(applyPaint(r, c, grid));
       }
     },
-    [grid, tool, palette, push, applyPaint, applyIcePaint],
+    [grid, tool, palette, push, applyPaint, applyIcePaint, applyLockPaint],
   );
 
   // ── Resolve grid (specials → actual type offsets) ─────────────────────────
@@ -184,6 +204,7 @@ export const LevelEditorScreenView = () => {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const hasIce = iceGrid.some((row) => row.some((v) => v > 0));
+  const hasLock = lockGrid.some((row) => row.some((v) => v > 0));
 
   const handlePlay = () => {
     saveSnapshot({
@@ -198,6 +219,7 @@ export const LevelEditorScreenView = () => {
       clearIceWin,
       scoring,
       iceGrid: hasIce ? iceGrid : undefined,
+      lockGrid: hasLock ? lockGrid : undefined,
     });
     setPendingLevel({
       rows: ROWS,
@@ -210,6 +232,7 @@ export const LevelEditorScreenView = () => {
       levelName: levelName || undefined,
       grid: resolveGrid(),
       iceGrid: hasIce ? iceGrid : undefined,
+      lockGrid: hasLock ? lockGrid : undefined,
       clearIceWin: clearIceWin && hasIce ? true : undefined,
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
@@ -231,6 +254,7 @@ export const LevelEditorScreenView = () => {
       mode,
       grid: resolveGrid(),
       iceGrid: hasIce ? iceGrid : undefined,
+      lockGrid: hasLock ? lockGrid : undefined,
       clearIceWin: clearIceWin && hasIce ? true : undefined,
       goals: Object.keys(activeGoals).length > 0 ? activeGoals : undefined,
       weights,
@@ -271,6 +295,11 @@ export const LevelEditorScreenView = () => {
         setIceGrid(
           Array.isArray(data.iceGrid)
             ? data.iceGrid.map((row: unknown[]) => row.map((v) => (typeof v === 'number' && v >= 0 && v <= 3 ? v : 0)))
+            : Array.from({ length: ROWS }, () => Array(COLUMNS).fill(0) as number[]),
+        );
+        setLockGrid(
+          Array.isArray(data.lockGrid)
+            ? data.lockGrid.map((row: unknown[]) => row.map((v) => (typeof v === 'number' && v >= 1 && v <= 2 ? v : 0)))
             : Array.from({ length: ROWS }, () => Array(COLUMNS).fill(0) as number[]),
         );
       } catch {
@@ -333,6 +362,7 @@ export const LevelEditorScreenView = () => {
       <EditorGrid
         grid={grid}
         iceGrid={iceGrid}
+        lockGrid={lockGrid}
         hovered={hovered}
         onHover={setHovered}
         isPainting={isPainting}

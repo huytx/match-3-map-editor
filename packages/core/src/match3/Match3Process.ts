@@ -175,6 +175,7 @@ export class Match3Process {
 
     // Sync ice grid to new piece positions after gravity
     this.match3.board.syncIceGrid();
+    this.match3.board.syncLockGrid();
   }
   private async refillGrid() {
     const newPieces = match3FillUp(this.match3.board.grid, this.match3.board.commonTypes);

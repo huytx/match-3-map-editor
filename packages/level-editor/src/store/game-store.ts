@@ -6,6 +6,8 @@ export interface EditorSnapshot {
   grid: number[][];
   /** Ice HP overlay: same dimensions as grid. 0 = no ice, 1–3 = HP layers */
   iceGrid?: number[][];
+  /** Lock HP overlay: same dimensions as grid. 0 = no lock, 1–2 = HP layers */
+  lockGrid?: number[][];
   mode: Match3Mode;
   duration: number;
   /** Max moves limit (0 = no limit) */

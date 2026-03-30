@@ -69,6 +69,8 @@ export interface Match3Config {
   iceGrid?: Match3Grid;
   /** When true, clearing all iced pieces triggers all cleared by adjacent matches. */
   clearIceWin?: boolean;
+  /** Lock overlay: same dims as board grid. 0 = no lock, 1–2 = HP layers. Locked pieces can be matched to reduce HP; destroyed when HP reaches 0. */
+  lockGrid?: Match3Grid;
 }
 
 /** Default match3 configuration */

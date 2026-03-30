@@ -44,6 +44,8 @@ export class Match3Board {
   public iceGrid: number[][] = [];
   /** Tracks iced positions already damaged this process round (prevents multi-damage per round) */
   private _iceDamagedThisRound = new Set<string>();
+  /** Lock HP layer, parallel to grid: 0 = no lock, 1–2 = lock HP */
+  public lockGrid: number[][] = [];
 
   constructor(match3: Match3) {
     this.match3 = match3;
@@ -114,6 +116,11 @@ export class Match3Board {
       ? config.iceGrid.map((row) => [...row])
       : Array.from({ length: this.rows }, () => new Array(this.columns).fill(0));
 
+    // Init lock layer
+    this.lockGrid = config.lockGrid
+      ? config.lockGrid.map((row) => [...row])
+      : Array.from({ length: this.rows }, () => new Array(this.columns).fill(0));
+
     // Fill up the visual board with piece sprites (skip empty cells, type=0)
     match3ForEach(this.grid, (gridPosition: Match3Position, type: Match3Type) => {
       if (type !== 0) this.createPiece(gridPosition, type);
@@ -125,6 +132,15 @@ export class Match3Board {
       if (hp > 0 && type !== 0) {
         const piece = this.getPieceByPosition(pos);
         if (piece) piece.setIce(hp as 1 | 2 | 3);
+      }
+    });
+
+    // Apply initial lock HP to pieces
+    match3ForEach(this.grid, (pos: Match3Position, type: Match3Type) => {
+      const hp = this.lockGrid[pos.row]?.[pos.column] ?? 0;
+      if (hp > 0 && type !== 0) {
+        const piece = this.getPieceByPosition(pos);
+        if (piece) piece.setLock(hp as 1 | 2);
       }
     });
   }
@@ -140,6 +156,7 @@ export class Match3Board {
     }
     this.pieces.length = 0;
     this.iceGrid = [];
+    this.lockGrid = [];
   }
 
   /**
@@ -227,6 +244,17 @@ export class Match3Board {
       return;
     }
 
+    // Locked pieces absorb the hit: reduce HP instead of being removed (until HP reaches 0)
+    const lockHp = this.lockGrid[position.row]?.[position.column] ?? 0;
+    if (lockHp > 0) {
+      const newHp = lockHp - 1;
+      this.lockGrid[position.row][position.column] = newHp;
+      piece.setLock(newHp as 0 | 1 | 2);
+      this.match3.onLockDamaged?.({ row: position.row, column: position.column }, newHp);
+      if (newHp > 0) return; // Still locked — absorb this pop
+      // HP reached 0: fall through and destroy the piece normally
+    }
+
     const isSpecial = this.match3.special.isSpecial(type);
     const combo = this.match3.process.getProcessRound();
 
@@ -270,6 +298,20 @@ export class Match3Board {
       this.match3.onIceDamaged?.({ row: nb.row, column: nb.column }, newHp);
     }
     this.checkAllIceCleared();
+  }
+
+  /** Rebuild lockGrid from current piece positions (called after gravity moves pieces) */
+  public syncLockGrid() {
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.columns; c++) {
+        this.lockGrid[r][c] = 0;
+      }
+    }
+    for (const piece of this.pieces) {
+      if (piece.lockHp > 0) {
+        this.lockGrid[piece.row][piece.column] = piece.lockHp;
+      }
+    }
   }
 
   /** Rebuild iceGrid from current piece positions (called after gravity moves pieces) */

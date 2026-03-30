@@ -34,9 +34,15 @@ export const ICE_INFO = [
   { name: 'Ice ×3', bg: '#1177bb', hp: 3 as const },
 ] as const;
 
+export const LOCK_INFO = [
+  { name: 'Lock ×1', bg: '#d48a00', hp: 1 as const },
+  { name: 'Lock ×2', bg: '#a06000', hp: 2 as const },
+] as const;
+
 export type PaletteEntry =
   | { kind: 'piece'; type: number }
   | { kind: 'special'; index: number }
   | { kind: 'block' }
-  | { kind: 'ice'; hp: 1 | 2 | 3 };
+  | { kind: 'ice'; hp: 1 | 2 | 3 }
+  | { kind: 'lock'; hp: 1 | 2 };
 export type ToolMode = 'paint' | 'fill' | 'remove';
