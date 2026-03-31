@@ -6,10 +6,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@shared/*": ["../shared/src/*"],
       "@puzzling-potions/core": ["../core/src/index.ts"]
     }
   },
-  "include": ["src", "../shared/src"],
-  "references": [{ "path": "../core" }]
+  "include": ["src"]
 }

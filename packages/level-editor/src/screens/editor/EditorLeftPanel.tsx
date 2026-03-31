@@ -256,7 +256,11 @@ export function EditorLeftPanel({
                 className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0"
                 style={{ backgroundColor: brushInfo.bg + '28', border: `2px solid ${brushInfo.bg}70` }}
               >
-                <img src={brushInfo.img} alt={brushInfo.name} className="w-9 h-9 object-contain drop-shadow" />
+                {'img' in brushInfo ? (
+                  <img src={brushInfo.img} alt={brushInfo.name} className="w-9 h-9 object-contain drop-shadow" />
+                ) : (
+                  <span className="text-xl">{'hp' in brushInfo && (palette.kind === 'ice' ? '❄️' : '🔒')}</span>
+                )}
               </div>
             )}
             <div className="flex flex-col flex-1 min-w-0">
